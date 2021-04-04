@@ -30,6 +30,36 @@ module Make (M:ORDERED) = struct
         in
         let new_pos = aux n in
         q.contents.(new_pos) <- (key, elem)
+
+    let rec trinkle q n =
+        let (key, elem) = q.contents.(n) in
+        let rec aux n =
+            let base = 2 * n + 1 in
+            let son = if base >= q.size then (
+                None
+            ) else if base + 1 = q.size then (
+                Some base
+            ) else if M.compare
+                (fst q.contents.(base))
+                (fst q.contents.(base + 1))
+                <= 0 then (
+                Some base
+            ) else (
+                Some (base + 1)
+            ) in match son with
+                | None -> n
+                | Some s -> (
+                    if M.compare
+                        key
+                        (fst q.contents.(s))
+                        > 0 then (
+                        q.contents.(n) <- q.contents.(s);
+                        aux s
+                    ) else n
+                )
+        in
+        let new_pos = aux n in
+        q.contents.(new_pos) <- (key, elem)
         
     let insert q key value =
         let node = (key, value) in
