@@ -17,6 +17,19 @@ module Make (M:ORDERED) = struct
     
     let size q = q.size
 
+    let sift q n =
+        let (key, elem) = q.contents.(n) in
+        let rec aux n =
+            if n > 0 then (
+                let father = (n - 1) / 2 in
+                if M.compare (fst q.contents.(father)) key > 0 then (
+                    q.contents.(n) <- q.contents.(father);
+                    aux father
+                ) else n
+            ) else 0
+        in
+        let new_pos = aux n in
+        q.contents.(new_pos) <- (key, elem)
         
     let insert q key value =
         let node = (key, value) in
