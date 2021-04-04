@@ -2,8 +2,12 @@
 OCAMLC = ocamlopt -g
 
 ALL_SRC=$(wildcard *.ml)
+TEST_SRC=$(wildcard test*)
+EXEC_SRC=$(filter-out $(TEST_SRC), $(ALL_SRC))
 EXEC=$(shell ocamldep -sort $(EXEC_SRC))
+TEST=$(filter-out main.ml, $(ALL_SRC))
 EXEC_MOD=$(EXEC:.ml=.cmx)
+TEST_MOD=$(TEST:.ml=.cmx)
 
 TEX=$(wildcard *.tex)
 PDF=$(TEX:.tex=.pdf)
@@ -15,6 +19,10 @@ pingouin: $(EXEC_MOD)
 	if [ -f main.ml ] ; then \
 	  $(OCAMLC) $(EXEC_MOD) -o pingouin ; \
 	fi
+
+test: $(TEST_MOD)
+	$(OCAMLC) $(TEST_MOD) -o test
+	./test
 
 SOURCES = $(wildcard *.ml) $(wildcard *mli)
 .depend: $(SOURCES)
@@ -37,6 +45,7 @@ tarball:
 clean:
 	rm -f pingouin
 	rm -f *.cmx *.cmo *.cmi *.o
+
 .PHONY: test clean
 
 %.pdf: %.tex
