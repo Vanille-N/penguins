@@ -80,3 +80,39 @@ module Make (M:ORDERED) = struct
     
     let key = fst
     let value = snd
+
+    let find q node =
+        let (key, value) = node in
+        let rec explore n =
+            if n >= q.size then None
+            else if q.contents.(n) = node then Some n
+            else if M.compare (fst q.contents.(n)) key > 0 then None
+            else match explore (2 * n + 1) with
+                | None -> explore (2 * n + 2)
+                | Some n -> Some n
+        in explore 0
+
+    let member q node = match find q node with
+        | None -> false
+        | Some n -> true
+
+    let remove q node = match find q node with
+        | None -> failwith "Cannot remove absent key"
+        | Some n -> (
+            q.size <- q.size - 1;
+            if n < q.size then (
+                q.contents.(n) <- q.contents.(q.size);
+                sift q n;
+                trinkle q n
+            )
+        )
+
+    let decrease_key q node new_key = match find q node with
+        | None -> let _ = insert q new_key (value node) in ()
+        | Some n -> (
+            q.contents.(n) <- (new_key, value node);
+            sift q n
+        )
+end
+
+
