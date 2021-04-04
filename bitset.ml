@@ -20,3 +20,14 @@ module type SET = sig
 
   val iter : t -> (elt -> unit) -> unit
 end
+
+module Make (F : FIN) : SET with type elt = F.t = struct
+    type t = int * Int64.t array
+    type elt = F.t
+ 
+    let accessor i = (i / 64, Int64.(shift_left (of_int 1) (i mod 64)))
+    let size = fst (accessor F.max) + 1
+
+    let empty = (0, Array.make size (Int64.of_int 0))
+    let cardinal (nb, _) = nb
+
