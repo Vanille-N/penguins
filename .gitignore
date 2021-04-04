@@ -1,0 +1,9 @@
+# Compilation artefacts
+*.cmi
+*.cmx
+*.o
+.depend
+
+# Binaries
+pingouin
+test
