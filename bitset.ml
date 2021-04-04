@@ -31,3 +31,15 @@ module Make (F : FIN) : SET with type elt = F.t = struct
     let empty = (0, Array.make size (Int64.of_int 0))
     let cardinal (nb, _) = nb
 
+    let init indic =
+        let set = Array.copy (snd empty) in
+        let count = ref 0 in
+        for i = 0 to F.max-1 do
+            if indic (F.of_int i) then (
+                incr count;
+                let (n, k) = accessor i in
+                set.(n) <- Int64.(logor set.(n) k)
+            )
+        done;
+        (!count, set)
+
