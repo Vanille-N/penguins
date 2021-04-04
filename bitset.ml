@@ -43,3 +43,27 @@ module Make (F : FIN) : SET with type elt = F.t = struct
         done;
         (!count, set)
 
+    let member_bit (_, set) i =
+        let (n, k) = accessor i in
+        not Int64.(equal (logand set.(n) k) (of_int 0))
+    
+    let add_bit (nb, set) i =
+        let set = Array.copy set in
+        let (n, k) = accessor i in
+        if member_bit (nb, set) i then (
+            (nb, set)
+        ) else (
+            set.(n) <- Int64.(logor set.(n) k);
+            (nb + 1, set)
+        )
+
+    let remove_bit (nb, set) i =
+        let set = Array.copy set in
+        let (n, k) = accessor i in
+        if member_bit (nb, set) i then (
+            set.(n) <- Int64.(logand set.(n) (lognot k));
+            (nb - 1, set)
+        ) else (
+            (nb, set)
+        )
+
