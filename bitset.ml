@@ -67,3 +67,6 @@ module Make (F : FIN) : SET with type elt = F.t = struct
             (nb, set)
         )
 
+    let member t elem = member_bit t (F.to_int elem)
+    let add t elem = add_bit t (F.to_int elem)
+    let remove t elem = remove_bit t (F.to_int elem)
