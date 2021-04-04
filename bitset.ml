@@ -70,3 +70,18 @@ module Make (F : FIN) : SET with type elt = F.t = struct
     let member t elem = member_bit t (F.to_int elem)
     let add t elem = add_bit t (F.to_int elem)
     let remove t elem = remove_bit t (F.to_int elem)
+
+    let subset (_,lt) (_,rt) =
+        let rec aux i =
+            i = size
+            || ((Int64.(equal rt.(i) (logor lt.(i) rt.(i)))) && (aux (i+1)))
+        in aux 0
+
+
+    let iter set fn =
+        for i = 0 to F.max-1 do
+            if member_bit set i then
+                fn (F.of_int i)
+        done
+end
+        
