@@ -4,37 +4,11 @@ module Chars : (Bitset.FIN with type t = char) = struct
     let to_int = int_of_char
     let of_int = char_of_int
 end
-
 module CSet = Bitset.Make(Chars)
 
-let nb_passed = ref 0
-let nb_failed = ref 0
-let failures = ref []
+open Unit_test
 
-let test name (tt:unit->unit) =
-    Format.printf "  * %s   " name;
-    let res =
-        try (tt (); true)
-        with f -> (
-            failures := (name, f) :: !failures;
-            false
-        )
-    in
-    if res then (
-        incr nb_passed;
-        Format.printf
-            "%s\x1b[32mOK\x1b[0m\n"
-            (String.make (60 - (String.length name)) '.')
-    ) else (
-        incr nb_failed;
-        Format.printf
-            "%s\x1b[31mFAILURE\x1b[0m\n"
-            (String.make (60 - (String.length name)) '.')
-    )
-
-
-let () = CSet.(
-    Format.printf "\ntest::Bitset\n";
+let main () = CSet.(
     let alpha = function 'a'..'z'|'A'..'Z' -> true | _ -> false in
     let numeric = function '0'..'9' -> true | _ -> false in
     let punct = function '.'|','|'?'|':'|';'|'!' -> true | _ -> false in
@@ -133,17 +107,28 @@ let () = CSet.(
         assert (not (member nomaxi maximum));
         assert (not (member nomini minimum))
     );
+    test "exhaustive check" (fun () ->
+        let curr = ref empty in
+        for i = 0 to 255 do
+            let prev = !curr in
+            let c = char_of_int i in
+            curr := add prev c;
+            assert (not (member prev c));
+            assert (member !curr c);
+            assert (cardinal !curr = cardinal prev + 1);
+        done;
+        for i = 0 to 255 do
+            let prev = !curr in
+            let c = char_of_int i in
+            curr := remove prev c;
+            assert (member prev c);
+            assert (not (member !curr c));
+            assert (cardinal !curr + 1 = cardinal prev);
+        done
+    );
 )
 
 let () =
-    Printf.printf "\n\t\x1b[%dm*-- Summary: %d tests, %d successes, %d failures --*\x1b[0m\n"
-        (if !nb_failed = 0 then 32 else 31) (!nb_passed + !nb_failed) !nb_passed !nb_failed;
-    List.iter (fun (t,e) ->
-        Printf.printf "In test <\x1b[31m%s\x1b[0m>\n" t;
-        (
-            try raise e
-            with    
-                | Assert_failure (s, i, j) -> Printf.printf "  Assert failed: \x1b[33m%s at (%d,%d)\x1b[0m\n" s i j
-                | Failure s -> Printf.printf "  Failure raised: \x1b[33m%s\x1b[0m\n" s
-        )
-    ) !failures
+    init "Bitset";
+    main ();
+    report ()

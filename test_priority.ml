@@ -8,33 +8,9 @@ end
 
 module PQueue = Priority.Make(Ints)
 
-let nb_passed = ref 0
-let nb_failed = ref 0
-let failures = ref []
+open Unit_test
 
-let test name (tt:unit->unit) =
-    Format.printf "  * %s   " name;
-    let res =
-        try (tt (); true)
-        with f -> (
-            failures := (name, f) :: !failures;
-            false
-        )
-    in
-    if res then (
-        incr nb_passed;
-        Format.printf
-            "%s\x1b[32mOK\x1b[0m\n"
-            (String.make (60 - (String.length name)) '.')
-    ) else (
-        incr nb_failed;
-        Format.printf
-            "%s\x1b[31mFAILURE\x1b[0m\n"
-            (String.make (60 - (String.length name)) '.')
-    )
-
-let () = PQueue.(
-    Format.printf "\ntest::Priority\n";
+let main () = PQueue.(
     test "create is empty" (fun () ->
         assert (size (create 10 0 ' ') = 0);
     );
@@ -214,21 +190,42 @@ let () = PQueue.(
     test "decrease nonexistent" (fun () ->
         let xa = insert pq 10 'a' in
         assert (extract_min pq = xa);
+        assert (not (member pq xa));
+        assert (key xa = 10);
         decrease_key pq xa 3;
-        assert (value (extract_min pq) = 'a')
+        assert (key xa = 3);
+        assert (member pq xa);
+        assert (extract_min pq = xa);
+        assert (size pq = 0)
+    );
+    test "decrease does not invalidate node" (fun () ->
+        let xa = insert pq 10 'a' in
+        assert (member pq xa);
+        assert (key xa = 10);
+        decrease_key pq xa 2;
+        assert (key xa = 2);
+        assert (member pq xa);
+        assert (extract_min pq = xa);
+        assert (size pq = 0)
+    );
+    test "duplicate key" (fun () ->
+        let _ = insert pq 1 'a' in
+        let _ = insert pq 1 'b' in
+        let _ = insert pq 1 'c' in
+        let x = extract_min pq in
+        let y = extract_min pq in
+        let z = extract_min pq in
+        assert (key x = 1);
+        assert (key y = 1);
+        assert (key z = 1);
+        assert (value x = 'a' || value y = 'a' || value z = 'a');
+        assert (value x = 'b' || value y = 'b' || value z = 'b');
+        assert (value z = 'c' || value y = 'c' || value z = 'c')
     )
 )
        
 
 let () =
-    Printf.printf "\n\t\x1b[%dm*-- Summary: %d tests, %d successes, %d failures --*\x1b[0m\n"
-        (if !nb_failed = 0 then 32 else 31) (!nb_passed + !nb_failed) !nb_passed !nb_failed;
-    List.iter (fun (t,e) ->
-        Printf.printf "In test <\x1b[31m%s\x1b[0m>\n" t;
-        (
-            try raise e
-            with    
-                | Assert_failure (s, i, j) -> Printf.printf "  Assert failed: \x1b[33m%s at (%d,%d)\x1b[0m\n" s i j
-                | Failure s -> Printf.printf "  Failure raised: \x1b[33m%s\x1b[0m\n" s
-        )
-    ) !failures
+    init "Priority";
+    main ();
+    report ()
