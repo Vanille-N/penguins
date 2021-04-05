@@ -175,11 +175,11 @@ let main () = PQueue.(
         assert (size pq = 0)
     );
     test "key decreases" (fun () ->
-        let xa = insert pq 10 'a' in
-        let xb = insert pq 15 'b' in
-        let xc = insert pq 20 'c' in
-        let xd = insert pq 25 'd' in
         let xe = insert pq 30 'e' in
+        let xa = insert pq 10 'a' in
+        let xd = insert pq 25 'd' in
+        let xc = insert pq 20 'c' in
+        let xb = insert pq 15 'b' in
         assert (decrease_key pq xe 11; extract_min pq = xa);
         assert (value (extract_min pq) = 'e');
         assert (decrease_key pq xc 5; value (extract_min pq) = 'c');
@@ -221,6 +221,24 @@ let main () = PQueue.(
         assert (value x = 'a' || value y = 'a' || value z = 'a');
         assert (value x = 'b' || value y = 'b' || value z = 'b');
         assert (value z = 'c' || value y = 'c' || value z = 'c')
+    );
+    test "non-copy type" (fun () ->
+        let pq = create 10 0 [||] in
+        let x1 = insert pq 10 [|1;2;3|] in
+        let x2 = insert pq 15 [|0|] in
+        let x3 = insert pq 20 [||] in
+        let x4 = insert pq 50 [|4;5|] in
+        let x5 = insert pq 25 [|1|] in
+        assert (member pq x2);
+        assert (extract_min pq = x1);
+        decrease_key pq x4 5;
+        assert (member pq x4);
+        assert (extract_min pq = x4);
+        assert (not (member pq x4));
+        assert (extract_min pq = x2);
+        assert (extract_min pq = x3);
+        assert (extract_min pq = x5);
+        assert (size pq = 0);
     )
 )
        
