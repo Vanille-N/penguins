@@ -39,6 +39,28 @@ module Make (M:S) = struct
             | _ :: rest -> explore seen rest
         in explore HSet.(add empty elt) [elt]
             
+    let disconnected set elt =
+        if HSet.(cardinal set) = 1 then true
+        else (
+            (* elt has some neighbors in [set] *)
+            let adj = neighbors set elt in
+            let new_set = HSet.(remove set elt) in
+            let cc_fst = accessible new_set (List.hd adj) in
+            HSet.(subset cc_fst new_set)
+        )
+
+    let split set elt =
+        let adj = neighbors set elt in
+        let new_set = HSet.(remove set elt) in
+        let ccs =
+            List.fold_left (
+                fun (ccs:HSet.t list) (adj:Hex.pos) ->
+                    if any (fun cc -> not (HSet.member cc adj)) ccs
+                    then (accessible new_set adj) :: ccs
+                    else ccs
+            ) [] adj
+        in ccs
+
     let maxpath pos = failwith "Unimplemented paths::Make::maxpath"
 
 end
