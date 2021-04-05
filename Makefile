@@ -55,8 +55,9 @@ tarball:
 	tar zcvf prog2_pingouin.tar.gz prog2_pingouin/
 
 clean:
-	rm -f pingouin
-	rm -f *.cmx *.cmo *.cmi *.o
+	rm -f pingouin perf prof test
+	rm -f *.cmx *.cmo *.cmi *.o *.out
+	rm -f perf.data* *.dump
 
 .PHONY: test clean perf prof
 

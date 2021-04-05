@@ -2,6 +2,11 @@ module type S = sig
     val grid : bool Hex.grid
 end
 
+let rec any fn = function
+    | [] -> false
+    | hd :: _ when fn hd -> true
+    | _ :: tl -> any fn tl
+
 module Make (M:S) = struct
     module Pos : (Bitset.FIN with type t = Hex.pos) = struct
         type t = Hex.pos
@@ -16,9 +21,24 @@ module Make (M:S) = struct
 
     let pp_path fmt ps = failwith "Unimplemented paths::Make::pp_path"
     let all_moves set pos = failwith "Unimplemented paths::Make::all_moves"
-    let accessible set elt = failwith "Unimplemented paths::Make::accessible"
-    let disconnected set elt = failwith "Unimplemented paths::Make::disconnected"
-    let split set pos = failwith "Unimplemented paths::Make::split"
+
+    let neighbors set elt =
+        Hex.all_directions
+        |> List.map Hex.(move elt)
+        |> List.filter HSet.(member set)
+
+    let accessible set elt =
+        let rec explore seen = function
+            | [] -> seen
+            | pos :: rest when not HSet.(member seen pos) ->
+                let adj =
+                    neighbors set pos
+                    |> List.filter (fun pos -> not (HSet.member seen pos)) (* remove those already explored *)
+                in
+                explore HSet.(add seen pos) (adj @ rest)
+            | _ :: rest -> explore seen rest
+        in explore HSet.(add empty elt) [elt]
+            
     let maxpath pos = failwith "Unimplemented paths::Make::maxpath"
 
 end
