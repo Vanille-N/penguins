@@ -3,7 +3,13 @@
 *.cmx
 *.o
 .depend
+*.out
+*.cmo
+*.dump
+perf.data*
 
 # Binaries
 pingouin
 test
+perf
+prof
