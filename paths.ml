@@ -20,7 +20,18 @@ module Make (M:S) = struct
     module HSet = Bitset.Make(Pos)
 
     let pp_path fmt ps = failwith "Unimplemented paths::Make::pp_path"
-    let all_moves set pos = failwith "Unimplemented paths::Make::all_moves"
+
+    let all_moves set pos =
+        let rec max_reach acc dir n =
+            let mv = (dir, n) in
+            let p = Hex.(move_n pos mv) in
+            if HSet.(member set p)
+            then max_reach (mv :: acc) dir (n + 1)
+            else acc
+        in List.fold_left (
+            fun (acc:Hex.move list) (dir:Hex.dir) ->
+                max_reach acc dir 1
+        ) [] Hex.all_directions
 
     let neighbors set elt =
         Hex.all_directions
