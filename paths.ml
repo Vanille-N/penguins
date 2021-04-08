@@ -7,6 +7,12 @@ let rec any fn = function
     | hd :: _ when fn hd -> true
     | _ :: tl -> any fn tl
 
+let inspect fn lst =
+    List.map (fun x -> fn x; x) lst
+
+let passthrough fn x =
+    fn x; x
+
 module Make (M:S) = struct
     module Pos : (Bitset.FIN with type t = Hex.pos) = struct
         type t = Hex.pos
@@ -42,7 +48,8 @@ module Make (M:S) = struct
         let successive = zipsymb (int_of_char 'a') ps in
         List.iter (fun (pos, symb) ->
             gr.(fst pos).(snd pos) <- symb
-        ) successive
+        ) successive;
+        Hex.pp_grid Format.std_formatter gr
 
     let all_moves set pos =
         let rec max_reach acc dir n =
@@ -55,18 +62,21 @@ module Make (M:S) = struct
             fun (acc:Hex.move list) (dir:Hex.dir) ->
                 max_reach acc dir 1
         ) [] Hex.all_directions
+        |> inspect (fun (d,n) -> Format.printf "-> %s x %d\n" Hex.(match d with N -> "N" | S -> "S" | NE -> "NE" | NW -> "NW" | SE -> "SE" | SW -> "SW") n)
 
     let neighbors set elt =
         Hex.all_directions
         |> List.map Hex.(move elt)
         |> List.filter HSet.(member set)
+        |> inspect (fun (i,j) -> Format.printf "neighbor (%d,%d) of (%d,%d)\n" i j (fst elt) (snd elt))
 
     let accessible set elt =
         let rec explore seen = function
-            | [] -> seen
+            | [] -> seen |> passthrough (fun x -> Format.printf "%d accessible from (%d,%d)\n" (HSet.cardinal x) (fst elt) (snd elt))
             | pos :: rest when not HSet.(member seen pos) ->
                 let adj =
                     neighbors set pos
+                    |> inspect (fun (i,j) -> Format.printf ">>> (%d,%d)\n" i j) 
                     |> List.filter (fun pos -> not (HSet.member seen pos)) (* remove those already explored *)
                 in
                 explore HSet.(add seen pos) (adj @ rest)
@@ -94,6 +104,7 @@ module Make (M:S) = struct
                     else ccs
             ) [] adj
         in ccs
+        |> inspect (fun cc -> Format.printf "Cardinal %d\n" (HSet.cardinal cc))
 
     module Keys : (Priority.ORDERED with type t = int * int) = struct
         type t = int * int (* (reachable, length): those with potential, then those whose computation is most advanced *)
