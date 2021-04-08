@@ -4,25 +4,24 @@ type 'a grid = 'a array array
 type dir = N | NE | SE | S | SW | NW
 let all_directions = N :: NE :: SE :: S :: SW :: NW :: []
 
-(* convert a direction into the array index shift it corresponds to *)
-let tup_of_dir = function
-    | N -> (-1, 0)
-    | NE -> (0, 1)
-    | SE -> (1, 0)
-    | S -> (1, -1)
-    | SW -> (0, -1)
-    | NW -> (-1, -1)
 
+let move_delta i = function
+  | N -> (0, 1)
+  | S -> (0, -1)
+  | SE -> (1, -(i mod 2))
+  | NW -> (-1, (1+i) mod 2)
+  | SW -> (-1, -(i mod 2))
+  | NE -> (1, (1+i) mod 2)
 
 type move = dir * int
 
 let move (i, j) d =
-    let (di, dj) = tup_of_dir d in
+    let (di, dj) = move_delta i d in
     (i + di, j + dj)
 
-let move_n (i, j) (d, n) =
-    let (di, dj) = tup_of_dir d in
-    (i + di * n, j + dj * n)
+let rec move_n pos = function
+    | (_, 0) -> pos
+    | (d, n) -> move_n (move pos d) (d, n-1)
 
 (* inclut la position de départ *)
 let path_of_moves initial moves =
