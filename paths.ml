@@ -19,7 +19,30 @@ module Make (M:S) = struct
     end
     module HSet = Bitset.Make(Pos)
 
-    let pp_path fmt ps = failwith "Unimplemented paths::Make::pp_path"
+    let pp_path fmt ps =
+        let gr = Array.map (
+            Array.map (
+                function true -> '*' | _ -> ' '
+            )
+        ) M.grid
+        in
+        let rec zipsymb k = function
+            | [] -> []
+            | hd :: tl -> (
+                let symb = char_of_int k in
+                let next = match symb with
+                    | 'z' -> int_of_char 'A'
+                    | 'Z' -> int_of_char '0'
+                    | '9' -> int_of_char '?'
+                    | '?' -> int_of_char '?'
+                    | _ -> k + 1
+                in (hd, symb) :: (zipsymb next tl)
+            )
+        in
+        let successive = zipsymb (int_of_char 'a') ps in
+        List.iter (fun (pos, symb) ->
+            gr.(fst pos).(snd pos) <- symb
+        ) successive
 
     let all_moves set pos =
         let rec max_reach acc dir n =
