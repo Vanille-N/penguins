@@ -81,7 +81,7 @@ module Make (M:S) = struct
                 in
                 explore HSet.(add seen pos) (adj @ rest)
             | _ :: rest -> explore seen rest
-        in explore HSet.(add empty elt) [elt]
+        in explore HSet.empty [elt]
             
     let disconnected set elt =
         if HSet.(cardinal set) = 1 then true
@@ -99,15 +99,18 @@ module Make (M:S) = struct
         let ccs =
             List.fold_left (
                 fun (ccs:HSet.t list) (adj:Hex.pos) ->
-                    if any (fun cc -> not (HSet.member cc adj)) ccs
+                    if not (any (fun cc -> HSet.member cc adj) ccs)
                     then (accessible new_set adj) :: ccs
                     else ccs
             ) [] adj
         in ccs
         |> inspect (fun cc -> Format.printf "Cardinal %d\n" (HSet.cardinal cc))
 
+    type key = int * int (* (reachable, length): those with potential, then those whose computation is most advanced *)
+    type value = HSet.t * Hex.pos * Hex.move list (* (not_sunk, current_pos, path) *)
+
     module Keys : (Priority.ORDERED with type t = int * int) = struct
-        type t = int * int (* (reachable, length): those with potential, then those whose computation is most advanced *)
+        type t = key
         let compare a b = compare b a (* greater (reachable, length) is better *)
     end
 
@@ -126,13 +129,22 @@ module Make (M:S) = struct
         let check x = not (Hashtbl.mem seen x)
     end
 
+    let maxpath start =
         let ice = HSet.init (fun (i,j) -> M.grid.(i).(j)) in
         let nb = HSet.cardinal ice in
-        let (pq:(HSet.t * (int * int) * Hex.move list) PQ.queue) = PQ.create nb (0,0) (HSet.empty, (0,0), []) in
-        ignore PQ.(insert pq (nb, 1) (ice, pos, []));
+        let (pq:value PQ.queue) = PQ.create 1000000 (0,0) (HSet.empty, (0,0), []) in
+        ignore PQ.(insert pq (nb, 1) (HSet.(remove ice start), start, []));
         let best_length = ref 0 in
         let best_moves = ref [] in
+        let solution len path =
+            if len > !best_length then (
+                best_length := len;
+                best_moves := path
+            )
+        in  
         while PQ.size pq > 0 do
+            flush stdout;
+            Format.printf "===============\nPQ size: %d\n" (PQ.size pq);
             let node = PQ.extract_min pq in
             let (nb, len) = PQ.key node in
             let (ice, pos, path) = PQ.value node in
