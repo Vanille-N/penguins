@@ -109,5 +109,25 @@ module Make (M:S) = struct
         ignore PQ.(insert pq (nb, 1) (ice, pos, []));
         let best_length = ref 0 in
         let best_moves = ref [] in
+        while PQ.size pq > 0 do
+            let node = PQ.extract_min pq in
+            let (nb, len) = PQ.key node in
+            let (ice, pos, path) = PQ.value node in
+            if len > !best_length then (
+                best_length := len;
+                best_moves := path
+            );
+            all_moves ice pos
+            |> List.map (fun mv -> 
+                let newpos = Hex.move_n pos mv in
+                List.map (fun x -> (
+                    (len + 1 + HSet.cardinal x, len + 1),
+                    (x, newpos, mv::path)
+                )) (split ice newpos)
+            )
+            |> List.flatten
+            |> List.iter (fun (k, v) -> ignore PQ.(insert pq k v));
+        done;
+        (!best_length, !best_moves)
 end
             
