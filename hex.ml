@@ -89,6 +89,12 @@ let read_grid chan interprete =
             )
         )) line
     )) lines;
+    let start = (
+        let (i, j) = start in
+        let actual_i = i + 1 in
+        let actual_j = j / 2 + 1 + (if offset = 0 then 0 else (actual_i mod 2)) in
+        (actual_i, actual_j)
+    ) in
     (start, gr)
 
 let from_channel chan = read_grid chan (fun c -> c <> ' ')
