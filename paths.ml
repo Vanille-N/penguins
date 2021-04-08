@@ -102,5 +102,12 @@ module Make (M:S) = struct
 
     module PQ = Priority.Make(Keys)
 
+    let maxpath pos =
+        let ice = HSet.init (fun (i,j) -> M.grid.(i).(j)) in
+        let nb = HSet.cardinal ice in
+        let (pq:(HSet.t * (int * int) * Hex.move list) PQ.queue) = PQ.create nb (0,0) (HSet.empty, (0,0), []) in
+        ignore PQ.(insert pq (nb, 1) (ice, pos, []));
+        let best_length = ref 0 in
+        let best_moves = ref [] in
 end
             
