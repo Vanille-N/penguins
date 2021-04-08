@@ -95,7 +95,12 @@ module Make (M:S) = struct
             ) [] adj
         in ccs
 
-    let maxpath pos = failwith "Unimplemented paths::Make::maxpath"
+    module Keys : (Priority.ORDERED with type t = int * int) = struct
+        type t = int * int (* (reachable, length): those with potential, then those whose computation is most advanced *)
+        let compare a b = compare b a (* greater (reachable, length) is better *)
+    end
+
+    module PQ = Priority.Make(Keys)
 
 end
             
