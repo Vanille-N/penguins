@@ -113,7 +113,19 @@ module Make (M:S) = struct
 
     module PQ = Priority.Make(Keys)
 
-    let maxpath pos =
+    module type SEEN = sig
+        type t
+        val visit : t -> unit
+        val check : t -> bool
+    end
+
+    module HMap : (SEEN with type t = value) = struct
+        type t = value
+        let seen = Hashtbl.create 100
+        let visit x = Hashtbl.add seen x ()
+        let check x = not (Hashtbl.mem seen x)
+    end
+
         let ice = HSet.init (fun (i,j) -> M.grid.(i).(j)) in
         let nb = HSet.cardinal ice in
         let (pq:(HSet.t * (int * int) * Hex.move list) PQ.queue) = PQ.create nb (0,0) (HSet.empty, (0,0), []) in
@@ -124,21 +136,39 @@ module Make (M:S) = struct
             let node = PQ.extract_min pq in
             let (nb, len) = PQ.key node in
             let (ice, pos, path) = PQ.value node in
-            if len > !best_length then (
-                best_length := len;
-                best_moves := path
-            );
-            all_moves ice pos
-            |> List.map (fun mv -> 
-                let newpos = Hex.move_n pos mv in
-                List.map (fun x -> (
-                    (len + 1 + HSet.cardinal x, len + 1),
-                    (x, newpos, mv::path)
-                )) (split ice newpos)
+            solution len path;
+            Format.printf "Reach: %d\n" HSet.(cardinal ice);
+            HSet.iter ice (fun (i,j) -> Format.printf "{%d|%d}" i j); Format.printf "\n";
+            pp_path Format.std_formatter (Hex.path_of_moves start (List.rev path));
+            if HMap.check (ice, pos, path) then (
+                HMap.visit (ice, pos, path);
+                all_moves ice pos
+                |> passthrough (fun _ -> Format.printf "yes\n")
+                |> List.map (fun mv -> 
+                    let newpos = Hex.move_n pos mv in
+                    (mv, List.map (fun x -> (
+                        (len + 1 + HSet.cardinal x, len + 1),
+                        (x, newpos, mv::path)
+                    )) (split ice newpos))
+                )
+                |> List.map (fun (mv, acc) -> (
+                    if List.length acc = 0
+                    then solution (len+1) (mv::path);
+                    acc
+                ))
+                |> List.flatten
+                |> inspect (fun x -> (
+                    let ((nb, len), (ice, pos, path)) = x in
+                    Format.printf "Visiting (%d,%d) [%d]\n" (fst pos) (snd pos) len
+                ))
+                |> List.filter (fun x -> ( (* remove those whose potential is less than a solution already found *)
+                    let ((nb,_), _) = x in
+                    nb > !best_length
+                ))
+                |> inspect (fun _ -> Format.printf "1 insertion\n")
+                |> List.iter (fun (k, v) -> ignore PQ.(insert pq k v));
             )
-            |> List.flatten
-            |> List.iter (fun (k, v) -> ignore PQ.(insert pq k v));
         done;
-        (!best_length, !best_moves)
+        (!best_length, List.rev !best_moves)
 end
             
