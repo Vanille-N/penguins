@@ -18,7 +18,7 @@ PDF=$(TEX:.tex=.pdf)
 default: $(EXEC_MOD) pingouin $(PDF)
 
 pingouin: $(EXEC_MOD)
-	$(OCAMLC) $(EXEC_MOD) -o pingouin
+	$(OCAMLFAST) $(EXEC_MOD) -o pingouin
 
 test: $(TEST_MOD)
 	$(OCAMLC) $(TEST_MOD) -o test
@@ -28,13 +28,11 @@ perf: $(PERF_MOD)
 	$(OCAMLFAST) $(PERF_MOD) -o perf
 	./perf
 
-prof: $(PERF_MOD)
-	ocamloptp -P $(PERF_MOD) -o prof
-	perf record --call-graph=dwarf -- ./prof
-	perf report	
-	ocamlcp -p a $(PERF) -o prof
-	./prof
-	ocamlprof priority.ml
+FILE=problems/large4
+prof: $(EXEC_MOD)
+	ocamlcp -p a $(EXEC) -o prof
+	./prof < $(FILE)
+	ocamlprof paths.ml
 
 SOURCES = $(wildcard *.ml) $(wildcard *mli)
 .depend: $(SOURCES)
