@@ -96,23 +96,41 @@ module Make (M:S) = struct
         Hex.all_directions
         |> List.map Hex.(move elt)
         |> List.filter HSet.(member set)
-        |> inspect (fun (i,j) -> Format.printf "neighbor (%d,%d) of (%d,%d)\n" i j (fst elt) (snd elt))
+        |> inspect (fun (i,j) -> if debug then Format.printf "neighbor (%d,%d) of (%d,%d)\n" i j (fst elt) (snd elt))
+
 
     let accessible set elt =
         let rec explore seen = function
-            | [] -> seen |> passthrough (fun x -> Format.printf "%d accessible from (%d,%d)\n" (HSet.cardinal x) (fst elt) (snd elt))
+            | [] -> seen |> passthrough (fun x -> if debug then Format.printf "%d accessible from (%d,%d)\n" (HSet.cardinal x) (fst elt) (snd elt))
             | pos :: rest when not HSet.(member seen pos) ->
                 let adj =
                     neighbors set pos
-                    |> inspect (fun (i,j) -> Format.printf ">>> (%d,%d)\n" i j) 
+                    |> inspect (fun (i,j) -> if debug then Format.printf ">>> (%d,%d)\n" i j) 
                     |> List.filter (fun pos -> not (HSet.member seen pos)) (* remove those already explored *)
                 in
                 explore HSet.(add seen pos) (adj @ rest)
             | _ :: rest -> explore seen rest
         in explore HSet.empty [elt]
+
+    let disconnected_trivial set elt =
+        HSet.(cardinal set) = 1 || (
+            let neighbors = Hex.(function
+                | N -> [NW; NE]
+                | S -> [SW; SE]
+                | NW -> [N; SW]
+                | NE -> [N; SE]
+                | SW -> [S; NW]
+                | SE -> [S; NE]
+            ) in
+            let has_neighbor mvs mv =
+                any (fun m -> List.mem m mvs) (neighbors mv)
+            in
+            let neigh = Hex.all_directions |> List.filter (fun d -> HSet.(member set Hex.(move elt d))) in
+            all (has_neighbor neigh) neigh
+        )
             
     let disconnected set elt =
-        if HSet.(cardinal set) = 1 then true
+        if disconnected_trivial set elt then true
         else (
             (* elt has some neighbors in [set] *)
             let adj = neighbors set elt in
