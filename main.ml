@@ -1,3 +1,10 @@
+let () =
+    Arg.(parse
+        [("--debug", Unit (fun () -> Config.debug := true), "turn on debug printing");
+         ("--display", Unit (fun () -> Config.display := true), "show grid at each step");
+    ] (fun s -> ()) "Don't touch my Fish!\nPlease provide the input in stdin")
+
+
 let (start, grid) = Hex.from_channel stdin 
 
 module M : (Paths.S) = struct
