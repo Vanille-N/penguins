@@ -1,17 +1,17 @@
 type pos = int * int
 type 'a grid = 'a array array
 
-type dir = N | NE | SE | S | SW | NW
-let all_directions = N :: NE :: SE :: S :: SW :: NW :: []
+type dir = E | NE | SE | W | NW | SW
+let all_directions = E :: NE :: SE :: W :: NW :: SW :: []
 
 (* convert move (+line) to difference of positions *)
 let move_delta i = function
-  | N -> (0, 1)
-  | S -> (0, -1)
-  | SE -> (1, -(i mod 2))
-  | NW -> (-1, (1+i) mod 2)
-  | SW -> (-1, -(i mod 2))
-  | NE -> (1, (1+i) mod 2)
+  | E -> (0, 1)
+  | W -> (0, -1)
+  | SW -> (1, -(i mod 2))
+  | NE -> (-1, (1+i) mod 2)
+  | NW -> (-1, -(i mod 2))
+  | SE -> (1, (1+i) mod 2)
 
 type move = dir * int
 
@@ -41,25 +41,25 @@ let pp_grid fmt gr =
 
 (* adjacent directions *)
 let neighbors = function
-    | N -> [NW; NE]
-    | S -> [SW; SE]
-    | NW -> [N; SW]
-    | NE -> [N; SE]
-    | SW -> [S; NW]
-    | SE -> [S; NE]
+    | E -> [NE; SE]
+    | W -> [NW; SW]
+    | NW -> [NE; W]
+    | NE -> [NW; E]
+    | SW -> [SE; W]
+    | SE -> [SW; E]
 
 (* direction directly opposite *)
 let opposite = function
-    | N -> S
+    | E -> W
     | NE -> SW
     | NW -> SE
-    | S -> N
+    | W -> E
     | SW -> NE
     | SE -> NW
 
 let to_string = function
-    | N -> "N"
-    | S -> "S"
+    | E -> "E"
+    | W -> "W"
     | NE -> "NE"
     | NW -> "NW"
     | SE -> "SE"

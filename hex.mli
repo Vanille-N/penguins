@@ -4,7 +4,7 @@ type 'a grid = 'a array array
 
 (** Directions *)
 
-type dir = N | NE | SE | S | SW | NW
+type dir
 
 (** Liste de toutes les directions possibles *)
 val all_directions : dir list
