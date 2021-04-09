@@ -7,11 +7,19 @@ let rec any fn = function
     | hd :: _ when fn hd -> true
     | _ :: tl -> any fn tl
 
+let rec all fn = function
+    | [] -> true
+    | hd :: _ when not (fn hd) -> false
+    | _ :: tl -> all fn tl
+
 let inspect fn lst =
     List.map (fun x -> fn x; x) lst
 
 let passthrough fn x =
     fn x; x
+
+let debug = false
+let display = true
 
 module Make (M:S) = struct
     module Pos : (Bitset.FIN with type t = Hex.pos) = struct
@@ -62,7 +70,27 @@ module Make (M:S) = struct
             fun (acc:Hex.move list) (dir:Hex.dir) ->
                 max_reach acc dir 1
         ) [] Hex.all_directions
-        |> inspect (fun (d,n) -> Format.printf "-> %s x %d\n" Hex.(match d with N -> "N" | S -> "S" | NE -> "NE" | NW -> "NW" | SE -> "SE" | SW -> "SW") n)
+        |> inspect (fun (d,n) -> if debug then Format.printf "-> %s x %d\n" Hex.(match d with N -> "N" | S -> "S" | NE -> "NE" | NW -> "NW" | SE -> "SE" | SW -> "SW") n)
+
+    let single_moves set pos =
+        Hex.all_directions
+        |> List.filter (fun d -> HSet.(member set Hex.(move pos d)))
+        |> List.map (fun d -> (d, 1))
+
+    let extremal_moves set pos =
+        let rec max_reach (start:Hex.move) (prev:Hex.move) (dir:Hex.dir) (n:int) =
+            let mv = (dir, n) in
+            let p = Hex.(move_n pos mv) in
+            if HSet.(member set p)
+            then max_reach start mv dir (n + 1)
+            else if start = mv then []
+            else if start = prev then [start]
+            else [start; prev]
+        in
+        Hex.all_directions
+        |> List.map (fun d -> max_reach (d,1) (d,1) d 1)
+        |> List.flatten
+        |> inspect (fun (d,n) -> if debug then Format.printf "-> %s x %d\n" Hex.(match d with N -> "N" | S -> "S" | NE -> "NE" | NW -> "NW" | SE -> "SE" | SW -> "SW") n)
 
     let neighbors set elt =
         Hex.all_directions
