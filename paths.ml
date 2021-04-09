@@ -24,6 +24,7 @@ module Make (M:S) = struct
             )
         ) M.grid
         in
+        (* zip successive positions with list of symbols *)
         let rec zipsymb k = function
             | [] -> []
             | hd :: tl -> (
@@ -45,23 +46,28 @@ module Make (M:S) = struct
 
     let all_moves set pos =
         let rec max_reach acc dir n =
+            (* how far can one reach in this direction *)
             let mv = (dir, n) in
             let p = Hex.(move_n pos mv) in
             if HSet.(member set p)
             then max_reach (mv :: acc) dir (n + 1)
             else acc
-        in List.fold_left (
+        in
+        Hex.all_directions
+        |> List.fold_left ( (* repeat for all possible directions *)
             fun (acc:Hex.move list) (dir:Hex.dir) ->
                 max_reach acc dir 1
-        ) [] Hex.all_directions
-        |> inspect (fun (d,n) -> if debug then Format.printf "-> %s x %d\n" Hex.(match d with N -> "N" | S -> "S" | NE -> "NE" | NW -> "NW" | SE -> "SE" | SW -> "SW") n)
+        ) []
+        |> inspect ~b:!debug (fun (d,n) -> Format.printf "-> %s x %d\n" Hex.(to_string d) n)
 
     let single_moves set pos =
+        (* moves of the form (_,1) *)
         Hex.all_directions
         |> List.filter (fun d -> HSet.(member set Hex.(move pos d)))
         |> List.map (fun d -> (d, 1))
 
     let extremal_moves set pos =
+        (* moves of the form (_,1) or (_,n) if (_,n+1) is not allowed *)
         let rec max_reach (start:Hex.move) (prev:Hex.move) (dir:Hex.dir) (n:int) =
             let mv = (dir, n) in
             let p = Hex.(move_n pos mv) in
@@ -74,47 +80,42 @@ module Make (M:S) = struct
         Hex.all_directions
         |> List.map (fun d -> max_reach (d,1) (d,1) d 1)
         |> List.flatten
-        |> inspect (fun (d,n) -> if debug then Format.printf "-> %s x %d\n" Hex.(match d with N -> "N" | S -> "S" | NE -> "NE" | NW -> "NW" | SE -> "SE" | SW -> "SW") n)
+        |> inspect ~b:!debug (fun (d,n) -> Format.printf "-> %s x %d\n" Hex.(to_string d) n)
 
+    (* positions directly adjacent *)
     let neighbors set elt =
         Hex.all_directions
         |> List.map Hex.(move elt)
         |> List.filter HSet.(member set)
-        |> inspect (fun (i,j) -> if debug then Format.printf "neighbor (%d,%d) of (%d,%d)\n" i j (fst elt) (snd elt))
+        |> inspect ~b:!debug (fun (i,j) -> Format.printf "neighbor (%d,%d) of (%d,%d)\n" i j (fst elt) (snd elt))
 
 
     let accessible set elt =
+        (* a simple DFS on the set *)
         let rec explore seen = function
-            | [] -> seen |> passthrough (fun x -> if debug then Format.printf "%d accessible from (%d,%d)\n" (HSet.cardinal x) (fst elt) (snd elt))
+            | [] -> seen |> passthrough ~b:!debug (fun x -> Format.printf "%d accessible from (%d,%d)\n" (HSet.cardinal x) (fst elt) (snd elt))
             | pos :: rest when not HSet.(member seen pos) ->
                 let adj =
                     neighbors set pos
-                    |> inspect (fun (i,j) -> if debug then Format.printf ">>> (%d,%d)\n" i j) 
+                    |> inspect ~b:!debug (fun (i,j) -> Format.printf ">>> (%d,%d)\n" i j) 
                     |> List.filter (fun pos -> not (HSet.member seen pos)) (* remove those already explored *)
                 in
                 explore HSet.(add seen pos) (adj @ rest)
             | _ :: rest -> explore seen rest
         in explore HSet.empty [elt]
 
-    let disconnected_trivial set elt =
+    let connected_trivial set elt =
+        (* If the set is obviously connected, no need to recalculate ccs *)
         HSet.(cardinal set) = 1 || (
-            let neighbors = Hex.(function
-                | N -> [NW; NE]
-                | S -> [SW; SE]
-                | NW -> [N; SW]
-                | NE -> [N; SE]
-                | SW -> [S; NW]
-                | SE -> [S; NE]
-            ) in
             let has_neighbor mvs mv =
-                any (fun m -> List.mem m mvs) (neighbors mv)
+                any (fun m -> List.mem m mvs) Hex.(neighbors mv)
             in
             let neigh = Hex.all_directions |> List.filter (fun d -> HSet.(member set Hex.(move elt d))) in
             all (has_neighbor neigh) neigh
         )
-            
+                
     let disconnected set elt =
-        if disconnected_trivial set elt then true
+        if connected_trivial set elt then false
         else (
             (* elt has some neighbors in [set] *)
             let adj = neighbors set elt in
@@ -124,7 +125,7 @@ module Make (M:S) = struct
         )
 
     let split set elt =
-        if disconnected_trivial set elt then [HSet.(remove set elt)]
+        if connected_trivial set elt then [HSet.(remove set elt)]
         else (
             let adj = neighbors set elt in
             let new_set = HSet.(remove set elt) in
@@ -136,23 +137,14 @@ module Make (M:S) = struct
                         else ccs
                 ) [] adj
             in ccs
-            |> inspect (fun cc -> if debug then Format.printf "Cardinal %d\n" (HSet.cardinal cc))
+            |> inspect ~b:!debug (fun cc -> Format.printf "Cardinal %d\n" (HSet.cardinal cc))
         )
-
-    let opposite = Hex.(function
-        | N -> S
-        | NE -> SW
-        | NW -> SE
-        | S -> N
-        | SW -> NE
-        | SE -> NW
-    )
 
     let unaligned join cc1 cc2 =
         let d1 = Hex.all_directions |> List.filter (fun d -> HSet.member cc1 Hex.(move join d)) in
         let d2 = Hex.all_directions |> List.filter (fun d -> HSet.member cc2 Hex.(move join d)) in
         match (d1, d2) with
-            | [x], [y] when y <> opposite x -> true
+            | [x], [y] when y <> Hex.opposite x -> true
             | _ -> false
 
     let trim_unreachable startpos ice =
@@ -249,9 +241,9 @@ module Make (M:S) = struct
                 let (ice, pos, path) = PQ.value node in
                 solution len path;
                 Format.printf "Reach: %d\nBest: %d\n" HSet.(cardinal ice) !best_length;
-                if debug then HSet.iter ice (fun (i,j) -> Format.printf "{%d|%d}" i j); Format.printf "\n";
-                if display then pp_path Format.std_formatter (Hex.path_of_moves start (List.rev path));
-                if not debug && display then (
+                if !debug then HSet.iter ice (fun (i,j) -> Format.printf "{%d|%d}" i j); Format.printf "\n";
+                if !display then pp_path Format.std_formatter (Hex.path_of_moves start (List.rev path));
+                if not !debug && !display then (
                     Format.printf "\x1b[%dA\n" (Array.length M.grid + 6)
                 );
                 if HMap.check (ice, pos) then (
@@ -270,15 +262,15 @@ module Make (M:S) = struct
                         acc
                     ))
                     |> List.flatten
-                    |> inspect (fun x -> (
+                    |> inspect ~b:!debug (fun x -> (
                         let ((nb, len, dist), (ice, pos, path)) = x in
-                        if debug then Format.printf "Visiting (%d,%d) [%d]\n" (fst pos) (snd pos) len
+                        Format.printf "Visiting (%d,%d) [%d]\n" (fst pos) (snd pos) len
                     ))
                     |> List.filter (fun x -> ( (* remove those whose potential is less than a solution already found *)
                         let ((nb,_,_), _) = x in
                         nb > !best_length
                     ))
-                    |> inspect (fun _ -> if debug then Format.printf "1 insertion\n")
+                    |> inspect ~b:!debug (fun _ -> Format.printf "1 insertion\n")
                     |> List.iter (fun (k, v) -> ignore PQ.(insert pq k v));
                 );
             done
@@ -290,7 +282,7 @@ module Make (M:S) = struct
         HMap.reset ();
         Format.printf "Switching to arbitrary moves\n";
         bestpath start all_moves;
-        if not debug && display then (
+        if not !debug && !display then (
             Format.printf "\x1b[%dB" (Array.length M.grid + 6)
         );
         (!best_length, List.rev !best_moves)

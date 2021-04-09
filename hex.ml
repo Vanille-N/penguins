@@ -4,7 +4,7 @@ type 'a grid = 'a array array
 type dir = N | NE | SE | S | SW | NW
 let all_directions = N :: NE :: SE :: S :: SW :: NW :: []
 
-
+(* convert move (+line) to difference of positions *)
 let move_delta i = function
   | N -> (0, 1)
   | S -> (0, -1)
@@ -15,6 +15,7 @@ let move_delta i = function
 
 type move = dir * int
 
+(* now we just have to add each component *)
 let move (i, j) d =
     let (di, dj) = move_delta i d in
     (i + di, j + dj)
@@ -23,7 +24,7 @@ let rec move_n pos = function
     | (_, 0) -> pos
     | (d, n) -> move_n (move pos d) (d, n-1)
 
-(* inclut la position de départ *)
+(* includes the starting position *)
 let path_of_moves initial moves =
     let rec aux (curr:pos) = function
         | [] -> [curr]
@@ -37,6 +38,32 @@ let pp_grid fmt gr =
         Array.iter (fprintf fmt "%c ") line;
         fprintf fmt "\n"
     )) gr
+
+(* adjacent directions *)
+let neighbors = function
+    | N -> [NW; NE]
+    | S -> [SW; SE]
+    | NW -> [N; SW]
+    | NE -> [N; SE]
+    | SW -> [S; NW]
+    | SE -> [S; NE]
+
+(* direction directly opposite *)
+let opposite = function
+    | N -> S
+    | NE -> SW
+    | NW -> SE
+    | S -> N
+    | SW -> NE
+    | SE -> NW
+
+let to_string = function
+    | N -> "N"
+    | S -> "S"
+    | NE -> "NE"
+    | NW -> "NW"
+    | SE -> "SE"
+    | SW -> "SW"
 
 let read_grid chan interprete =
     let lines = ref [] in

@@ -9,6 +9,12 @@ type dir = N | NE | SE | S | SW | NW
 (** Liste de toutes les directions possibles *)
 val all_directions : dir list
 
+(* Gives all (2) directions that are considered "adjacent" *)
+val neighbors : dir -> dir list
+
+(* Gives the direction considered "opposite" *)
+val opposite : dir -> dir
+
 (** Mouvements *)
 
 type move = dir * int
@@ -21,6 +27,9 @@ val move_n : pos -> move -> pos
 val path_of_moves : pos -> move list -> pos list
 
 (** Entrées/sorties *)
+
+(* util *)
+val to_string : dir -> string
 
 (** Affichage d'une grille de caractères. *)
 val pp_grid : Format.formatter -> char grid -> unit
