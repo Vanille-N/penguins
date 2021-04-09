@@ -212,11 +212,17 @@ module Make (M:S) = struct
         );
         !trim
 
+
+    type key = int * int * int
+    (* (reachable, length, dist):
+     * - those with the less wasted space,
+     * - then those whose computation is most advanced,
+     * - then those with fewer travel distance *)
     type value = HSet.t * Hex.pos * Hex.move list (* (not_sunk, current_pos, path) *)
 
-    module Keys : (Priority.ORDERED with type t = int * int) = struct
+    module Keys : (Priority.ORDERED with type t = key) = struct
         type t = key
-        let compare a b = compare b a (* greater (reachable, length) is better *)
+        let compare (r1,l1,d1) (r2,l2,d2) = compare (-r1,-l1,d1) (-r2,-l2,d2) 
     end
 
     module PQ = Priority.Make(Keys)
@@ -225,20 +231,21 @@ module Make (M:S) = struct
         type t
         val visit : t -> unit
         val check : t -> bool
+        val reset : unit -> unit
     end
 
-    module HMap : (SEEN with type t = value) = struct
-        type t = value
+    module HMap : (SEEN with type t = HSet.t * Hex.pos) = struct
+        type t = HSet.t * Hex.pos
         let seen = Hashtbl.create 100
         let visit x = Hashtbl.add seen x ()
         let check x = not (Hashtbl.mem seen x)
+        let reset () = Hashtbl.clear seen
     end
 
     let maxpath start =
         let ice = HSet.init (fun (i,j) -> M.grid.(i).(j)) in
+        let ice = trim_unreachable start ice in
         let nb = HSet.cardinal ice in
-        let (pq:value PQ.queue) = PQ.create 1000000 (0,0) (HSet.empty, (0,0), []) in
-        ignore PQ.(insert pq (nb, 1) (HSet.(remove ice start), start, []));
         let best_length = ref 0 in
         let best_moves = ref [] in
         let solution len path =
@@ -247,45 +254,61 @@ module Make (M:S) = struct
                 best_moves := path
             )
         in  
-        while PQ.size pq > 0 do
-            flush stdout;
-            Format.printf "===============\nPQ size: %d\n" (PQ.size pq);
-            let node = PQ.extract_min pq in
-            let (nb, len) = PQ.key node in
-            let (ice, pos, path) = PQ.value node in
-            solution len path;
-            Format.printf "Reach: %d\n" HSet.(cardinal ice);
-            HSet.iter ice (fun (i,j) -> Format.printf "{%d|%d}" i j); Format.printf "\n";
-            pp_path Format.std_formatter (Hex.path_of_moves start (List.rev path));
-            if HMap.check (ice, pos, path) then (
-                HMap.visit (ice, pos, path);
-                all_moves ice pos
-                |> passthrough (fun _ -> Format.printf "yes\n")
-                |> List.map (fun mv -> 
-                    let newpos = Hex.move_n pos mv in
-                    (mv, List.map (fun x -> (
-                        (len + 1 + HSet.cardinal x, len + 1),
-                        (x, newpos, mv::path)
-                    )) (split ice newpos))
-                )
-                |> List.map (fun (mv, acc) -> (
-                    if List.length acc = 0
-                    then solution (len+1) (mv::path);
-                    acc
-                ))
-                |> List.flatten
-                |> inspect (fun x -> (
-                    let ((nb, len), (ice, pos, path)) = x in
-                    Format.printf "Visiting (%d,%d) [%d]\n" (fst pos) (snd pos) len
-                ))
-                |> List.filter (fun x -> ( (* remove those whose potential is less than a solution already found *)
-                    let ((nb,_), _) = x in
-                    nb > !best_length
-                ))
-                |> inspect (fun _ -> Format.printf "1 insertion\n")
-                |> List.iter (fun (k, v) -> ignore PQ.(insert pq k v));
-            )
-        done;
+        let bestpath start allowed_moves =
+            let pq = PQ.create 1000000 (0,0,0) (HSet.empty, (0,0), []) in
+            ignore PQ.(insert pq (nb, 1, 0) (HSet.(remove ice start), start, []));
+            while PQ.size pq > 0 do
+                flush stdout;
+                Format.printf "===============\nPQ size: %d\n" (PQ.size pq);
+                let node = PQ.extract_min pq in
+                let (nb, len, dist) = PQ.key node in
+                let (ice, pos, path) = PQ.value node in
+                solution len path;
+                Format.printf "Reach: %d\nBest: %d\n" HSet.(cardinal ice) !best_length;
+                if debug then HSet.iter ice (fun (i,j) -> Format.printf "{%d|%d}" i j); Format.printf "\n";
+                if display then pp_path Format.std_formatter (Hex.path_of_moves start (List.rev path));
+                if not debug && display then (
+                    Format.printf "\x1b[%dA\n" (Array.length M.grid + 6)
+                );
+                if HMap.check (ice, pos) then (
+                    HMap.visit (ice, pos);
+                    allowed_moves ice pos
+                    |> List.map (fun mv -> 
+                        let newpos = Hex.move_n pos mv in
+                        (mv, List.map (fun x -> (
+                            (len + 1 + HSet.cardinal x, len + 1, dist + snd mv),
+                            (x, newpos, mv::path)
+                        )) (split ice newpos))
+                    )
+                    |> List.map (fun (mv, acc) -> (
+                        if List.length acc = 0
+                        then solution (len+1) (mv::path);
+                        acc
+                    ))
+                    |> List.flatten
+                    |> inspect (fun x -> (
+                        let ((nb, len, dist), (ice, pos, path)) = x in
+                        if debug then Format.printf "Visiting (%d,%d) [%d]\n" (fst pos) (snd pos) len
+                    ))
+                    |> List.filter (fun x -> ( (* remove those whose potential is less than a solution already found *)
+                        let ((nb,_,_), _) = x in
+                        nb > !best_length
+                    ))
+                    |> inspect (fun _ -> if debug then Format.printf "1 insertion\n")
+                    |> List.iter (fun (k, v) -> ignore PQ.(insert pq k v));
+                );
+            done
+        in
+        bestpath start single_moves;
+        HMap.reset ();
+        Format.printf "Switching to extremal moves\n";
+        bestpath start extremal_moves;
+        HMap.reset ();
+        Format.printf "Switching to arbitrary moves\n";
+        bestpath start all_moves;
+        if not debug && display then (
+            Format.printf "\x1b[%dB" (Array.length M.grid + 6)
+        );
         (!best_length, List.rev !best_moves)
 end
             
