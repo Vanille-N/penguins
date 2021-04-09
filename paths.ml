@@ -17,11 +17,11 @@ module Make (M:S) = struct
     end
     module HSet = Bitset.Make(Pos)
 
-    let pp_path fmt ps =
-        let gr = Array.map (
-            Array.map (
-                function true -> '*' | _ -> ' '
-            )
+    let show_path translator fmt ps =
+        let gr = Array.mapi (fun i line ->
+            Array.mapi (fun j b ->
+                translator (i,j) b
+            ) line
         ) M.grid
         in
         (* zip successive positions with list of symbols *)
@@ -43,6 +43,14 @@ module Make (M:S) = struct
             gr.(fst pos).(snd pos) <- symb
         ) successive;
         Hex.pp_grid Format.std_formatter gr
+
+    let pp_path = show_path (fun _ b -> if b then '*' else ' ')
+
+    let translator ice_full ice_trim ice_curr p _ =
+        if HSet.member ice_curr p then '*'
+        else if HSet.member ice_trim p then '_'
+        else if HSet.member ice_full p then '.'
+        else ' '
 
     let all_moves set pos =
         let rec max_reach acc dir n =
@@ -174,11 +182,12 @@ module Make (M:S) = struct
                 )
             )
         );
-        let turns = !turns |> List.filter (fun cc -> not (any (fun cc' -> cc <> cc' && HSet.subset cc' cc) !turns)) in
+        let turns = !turns
+            |> List.sort (fun cc1 cc2 -> HSet.(compare (cardinal cc2) (cardinal cc1)))
+        in
         if List.length turns > 0 then (
             turns
-            |> List.sort (fun cc1 cc2 -> HSet.(compare (cardinal cc2) (cardinal cc1)))
-            |> List.tl
+            |> List.filter (fun cc -> not (HSet.subset cc (List.hd turns)))
             |> List.iter (fun set ->
                 HSet.iter set (fun p ->
                     trim := HSet.remove !trim p;
