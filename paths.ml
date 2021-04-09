@@ -1,27 +1,11 @@
+open Config
+
 module type S = sig
     val grid : bool Hex.grid
 end
 
-let rec any fn = function
-    | [] -> false
-    | hd :: _ when fn hd -> true
-    | _ :: tl -> any fn tl
-
-let rec all fn = function
-    | [] -> true
-    | hd :: _ when not (fn hd) -> false
-    | _ :: tl -> all fn tl
-
-let inspect fn lst =
-    List.map (fun x -> fn x; x) lst
-
-let passthrough fn x =
-    fn x; x
-
-let debug = false
-let display = true
-
 module Make (M:S) = struct
+    (* positions represented by the standard (i,j) <-> i*jmax + j bijection *)
     module Pos : (Bitset.FIN with type t = Hex.pos) = struct
         type t = Hex.pos
         let height = Array.length M.grid
