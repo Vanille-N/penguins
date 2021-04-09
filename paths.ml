@@ -140,19 +140,78 @@ module Make (M:S) = struct
         )
 
     let split set elt =
-        let adj = neighbors set elt in
-        let new_set = HSet.(remove set elt) in
-        let ccs =
-            List.fold_left (
-                fun (ccs:HSet.t list) (adj:Hex.pos) ->
-                    if not (any (fun cc -> HSet.member cc adj) ccs)
-                    then (accessible new_set adj) :: ccs
-                    else ccs
-            ) [] adj
-        in ccs
-        |> inspect (fun cc -> Format.printf "Cardinal %d\n" (HSet.cardinal cc))
+        if disconnected_trivial set elt then [HSet.(remove set elt)]
+        else (
+            let adj = neighbors set elt in
+            let new_set = HSet.(remove set elt) in
+            let ccs =
+                List.fold_left (
+                    fun (ccs:HSet.t list) (adj:Hex.pos) ->
+                        if not (any (fun cc -> HSet.member cc adj) ccs)
+                        then (accessible new_set adj) :: ccs
+                        else ccs
+                ) [] adj
+            in ccs
+            |> inspect (fun cc -> if debug then Format.printf "Cardinal %d\n" (HSet.cardinal cc))
+        )
 
-    type key = int * int (* (reachable, length): those with potential, then those whose computation is most advanced *)
+    let opposite = Hex.(function
+        | N -> S
+        | NE -> SW
+        | NW -> SE
+        | S -> N
+        | SW -> NE
+        | SE -> NW
+    )
+
+    let unaligned join cc1 cc2 =
+        let d1 = Hex.all_directions |> List.filter (fun d -> HSet.member cc1 Hex.(move join d)) in
+        let d2 = Hex.all_directions |> List.filter (fun d -> HSet.member cc2 Hex.(move join d)) in
+        match (d1, d2) with
+            | [x], [y] when y <> opposite x -> true
+            | _ -> false
+
+    let trim_unreachable startpos ice =
+        let trim = ref ice in
+        (* when a position splits the board into 3ccs, one must be unreachable *)
+        HSet.iter ice (fun p -> (
+            let ccs = split ice p |> List.sort (fun cc1 cc2 -> HSet.(compare (cardinal cc2) (cardinal cc1))) in
+            Format.printf "Position (%d,%d), ccs %d\n" (fst p) (snd p) (List.length ccs);
+            if List.length ccs > 2 then (
+                List.iter (fun cc ->
+                    HSet.iter cc (fun p ->
+                        trim := HSet.remove !trim p;
+                        Format.printf "removed %d %d\n" (fst p) (snd p)
+                    )
+                ) List.(ccs |> tl |> tl);
+            )
+        ));
+        (* no more than one turning point can be explored to the end *)
+        let ice = !trim in
+        let turns = ref [] in
+        HSet.iter ice (fun p ->
+            let ccs = split ice p |> List.sort (fun cc1 cc2 -> HSet.(compare (cardinal cc2) (cardinal cc1))) in
+            if List.length ccs = 2 then (
+                let (a, b) = List.((hd ccs, ccs |> tl |> hd)) in 
+                if HSet.(member a startpos) && unaligned p a b then (
+                    turns := b :: !turns;
+                )
+            )
+        );
+        let turns = !turns |> List.filter (fun cc -> not (any (fun cc' -> cc <> cc' && HSet.subset cc' cc) !turns)) in
+        if List.length turns > 0 then (
+            turns
+            |> List.sort (fun cc1 cc2 -> HSet.(compare (cardinal cc2) (cardinal cc1)))
+            |> List.tl
+            |> List.iter (fun set ->
+                HSet.iter set (fun p ->
+                    trim := HSet.remove !trim p;
+                    Format.printf "removed (second instance) %d %d\n" (fst p) (snd p)
+                )
+            )
+        );
+        !trim
+
     type value = HSet.t * Hex.pos * Hex.move list (* (not_sunk, current_pos, path) *)
 
     module Keys : (Priority.ORDERED with type t = int * int) = struct
