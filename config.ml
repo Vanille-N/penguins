@@ -1,6 +1,6 @@
 let debug = ref false
-
 let display = ref false
+let ansi_fmt = ref false
 
 let rec any fn = function
     | [] -> false

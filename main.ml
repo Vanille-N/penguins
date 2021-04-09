@@ -2,6 +2,7 @@ let () =
     Arg.(parse
         [("--debug", Unit (fun () -> Config.debug := true), "turn on debug printing");
          ("--display", Unit (fun () -> Config.display := true), "show grid at each step");
+         ("--ansi", Unit (fun () -> Config.ansi_fmt := true), "use ANSI escape codes to improve formatting");
     ] (fun s -> ()) "Don't touch my Fish!\nPlease provide the input in stdin")
 
 
