@@ -197,6 +197,33 @@ module Make (M:S) = struct
         );
         !trim
 
+    let trim_unreachable_single startpos ice =
+        let trim = ref ice in
+        (* if a position splits the board into two (or 3) ccs, only one of them may be explored *) 
+        let turns = ref [] in
+        HSet.iter ice (fun p ->
+            let ccs = split ice p |> List.sort (fun cc1 cc2 -> HSet.(compare (cardinal cc2) (cardinal cc1))) in
+            if List.length ccs > 1 then (
+                let (bg, rest) = List.((hd ccs, tl ccs)) in
+                if HSet.(member bg startpos) then (
+                    turns := rest @ !turns
+                )
+            )
+        );
+        let turns = !turns
+            |> List.sort (fun cc1 cc2 -> HSet.(compare (cardinal cc2) (cardinal cc1)))
+        in
+        if List.length turns > 0 then (
+            turns
+            |> List.filter (fun cc -> not (HSet.subset cc (List.hd turns)))
+            |> List.iter (fun set ->
+                HSet.iter set (fun p ->
+                    trim := HSet.remove !trim p;
+                    Format.printf "removed (third instance) %d %d\n" (fst p) (snd p)
+                )
+            )
+        );
+        !trim
 
     type key = int * int * int
     (* (reachable, length, dist):
@@ -228,9 +255,10 @@ module Make (M:S) = struct
     end
 
     let maxpath start =
-        let ice = HSet.init (fun (i,j) -> M.grid.(i).(j)) in
-        let ice = trim_unreachable start ice in
-        let nb = HSet.cardinal ice in
+        let ice_full = HSet.init (fun (i,j) -> M.grid.(i).(j)) in
+        let ice_trim = trim_unreachable start (accessible ice_full start) in
+        let ice_single = trim_unreachable_single start ice_trim in
+        let nb = HSet.cardinal ice_trim in
         let best_length = ref 0 in
         let best_moves = ref [] in
         let solution len path =
@@ -238,10 +266,14 @@ module Make (M:S) = struct
                 best_length := len;
                 best_moves := path
             )
-        in  
-        let bestpath start allowed_moves =
+        in 
+        Format.printf "Trimmed useless paths\n";
+        show_path (translator ice_full ice_trim ice_trim) Format.std_formatter [];
+        Format.printf "Single-move optimization\n";
+        show_path (translator ice_full ice_trim ice_single) Format.std_formatter [];
+        let bestpath ice_init start allowed_moves =
             let pq = PQ.create 1000000 (0,0,0) (HSet.empty, (0,0), []) in
-            ignore PQ.(insert pq (nb, 1, 0) (HSet.(remove ice start), start, []));
+            ignore PQ.(insert pq (nb, 1, 0) (HSet.(remove ice_init start), start, []));
             while PQ.size pq > 0 do
                 flush stdout;
                 Format.printf "===============\nPQ size: %d\n" (PQ.size pq);
@@ -251,8 +283,8 @@ module Make (M:S) = struct
                 solution len path;
                 Format.printf "Reach: %d\nBest: %d\n" HSet.(cardinal ice) !best_length;
                 if !debug then HSet.iter ice (fun (i,j) -> Format.printf "{%d|%d}" i j); Format.printf "\n";
-                if !display then pp_path Format.std_formatter (Hex.path_of_moves start (List.rev path));
-                if not !debug && !display then (
+                if !display then show_path (translator ice_full ice_trim ice) Format.std_formatter (Hex.path_of_moves start (List.rev path));
+                if not !debug && !display && !ansi_fmt then (
                     Format.printf "\x1b[%dA\n" (Array.length M.grid + 6)
                 );
                 if HMap.check (ice, pos) then (
@@ -284,14 +316,14 @@ module Make (M:S) = struct
                 );
             done
         in
-        bestpath start single_moves;
+        bestpath ice_single start single_moves;
         HMap.reset ();
         Format.printf "Switching to extremal moves\n";
-        bestpath start extremal_moves;
+        bestpath ice_trim start extremal_moves;
         HMap.reset ();
         Format.printf "Switching to arbitrary moves\n";
-        bestpath start all_moves;
-        if not !debug && !display then (
+        bestpath ice_trim start all_moves;
+        if not !debug && !display && !ansi_fmt then (
             Format.printf "\x1b[%dB" (Array.length M.grid + 6)
         );
         (!best_length, List.rev !best_moves)
