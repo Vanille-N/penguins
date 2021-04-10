@@ -14,13 +14,8 @@ val quiet : bool ref
 
 val first_pass : bool ref
 val extremal_pass : bool ref
-val trim_general : bool ref
-val trim_single : bool ref
+val trim : bool ref
 
-
-(** Utilities *)
-val any : ('a -> bool) -> 'a list -> bool
-val all : ('a -> bool) -> 'a list -> bool
 
 (** Useful for debug and general-purpose printing *)
 val inspect : ?b:bool -> ('a -> unit) -> 'a list -> 'a list

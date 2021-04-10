@@ -1,8 +1,18 @@
-open Config
+module Cfg = Config
 
 module type S = sig
     val grid : bool Hex.grid
 end
+
+let rec any fn = function
+    | [] -> false
+    | hd :: _ when fn hd -> true
+    | _ :: tl -> any fn tl
+
+let rec all fn = function
+    | [] -> true
+    | hd :: _ when not (fn hd) -> false
+    | _ :: tl -> all fn tl
 
 module Make (M:S) = struct
     (* positions represented by the standard (i,j) <-> i*jmax + j bijection *)
@@ -18,10 +28,10 @@ module Make (M:S) = struct
     module HSet = Bitset.Make(Pos)
 
     let print_up ?n:(n=Array.length M.grid + 5) () =
-        if !ansi_fmt then Format.printf "\x1b[%dA" n
+        if !Cfg.ansi_fmt then Format.printf "\x1b[%dA" n
 
     let print_down ?n:(n=Array.length M.grid + 5) () =
-        if !ansi_fmt then Format.printf "\x1b[%dB" n
+        if !Cfg.ansi_fmt then Format.printf "\x1b[%dB" n
 
     let show_path translator fmt ps =
         let gr = Array.mapi (fun i line ->
@@ -72,7 +82,7 @@ module Make (M:S) = struct
             fun (acc:Hex.move list) (dir:Hex.dir) ->
                 max_reach acc dir 1
         ) []
-        |> inspect ~b:!debug (fun (d,n) -> Format.printf "-> %s x %d\n" Hex.(to_string d) n)
+        |> Cfg.(inspect ~b:!debug (fun (d,n) -> Format.printf "-> %s x %d\n" Hex.(to_string d) n))
 
     let single_moves set pos =
         (* moves of the form (_,1) *)
@@ -94,24 +104,24 @@ module Make (M:S) = struct
         Hex.all_directions
         |> List.map (fun d -> max_reach (d,1) (d,1) d 1)
         |> List.flatten
-        |> inspect ~b:!debug (fun (d,n) -> Format.printf "-> %s x %d\n" Hex.(to_string d) n)
+        |> Cfg.(inspect ~b:!debug (fun (d,n) -> Format.printf "-> %s x %d\n" Hex.(to_string d) n))
 
     (* positions directly adjacent *)
     let neighbors set elt =
         Hex.all_directions
         |> List.map Hex.(move elt)
         |> List.filter HSet.(member set)
-        |> inspect ~b:!debug (fun (i,j) -> Format.printf "neighbor (%d,%d) of (%d,%d)\n" i j (fst elt) (snd elt))
+        |> Cfg.(inspect ~b:!debug (fun (i,j) -> Format.printf "neighbor (%d,%d) of (%d,%d)\n" i j (fst elt) (snd elt)))
 
 
     let accessible set elt =
         (* a simple DFS on the set *)
         let rec explore seen = function
-            | [] -> seen |> passthrough ~b:!debug (fun x -> Format.printf "%d accessible from (%d,%d)\n" (HSet.cardinal x) (fst elt) (snd elt))
+            | [] -> seen |> Cfg.(passthrough ~b:!debug (fun x -> Format.printf "%d accessible from (%d,%d)\n" (HSet.cardinal x) (fst elt) (snd elt)))
             | pos :: rest when not HSet.(member seen pos) ->
                 let adj =
                     neighbors set pos
-                    |> inspect ~b:!debug (fun (i,j) -> Format.printf ">>> (%d,%d)\n" i j) 
+                    |> Cfg.(inspect ~b:!debug (fun (i,j) -> Format.printf ">>> (%d,%d)\n" i j)) 
                     |> List.filter (fun pos -> not (HSet.member seen pos)) (* remove those already explored *)
                 in
                 explore HSet.(add seen pos) (adj @ rest)
@@ -151,7 +161,7 @@ module Make (M:S) = struct
                         else ccs
                 ) [] adj
             in ccs
-            |> inspect ~b:!debug (fun cc -> Format.printf "Cardinal %d\n" (HSet.cardinal cc))
+            |> Cfg.(inspect ~b:!debug (fun cc -> Format.printf "Cardinal %d\n" (HSet.cardinal cc)))
         )
 
     let unaligned join cc1 cc2 =
@@ -172,7 +182,7 @@ module Make (M:S) = struct
                 List.iter (fun cc ->
                     HSet.iter cc (fun p ->
                         trim := HSet.remove !trim p;
-                        if !debug then Format.printf "removed (first instance) (%d,%d)\n" (fst p) (snd p)
+                        if !Cfg.debug then Format.printf "removed (first instance) (%d,%d)\n" (fst p) (snd p)
                     )
                 ) List.(ccs |> tl |> tl);
             )
@@ -200,7 +210,7 @@ module Make (M:S) = struct
             |> List.iter (fun set ->
                 HSet.iter set (fun p ->
                     trim := HSet.remove !trim p;
-                    if !debug then Format.printf "removed (second instance) (%d,%d)\n" (fst p) (snd p)
+                    if !Cfg.debug then Format.printf "removed (second instance) (%d,%d)\n" (fst p) (snd p)
                 )
             )
         );
@@ -230,7 +240,7 @@ module Make (M:S) = struct
             |> List.iter (fun set ->
                 HSet.iter set (fun p ->
                     trim := HSet.remove !trim p;
-                    if !debug then Format.printf "removed (third instance) (%d,%d)\n" (fst p) (snd p)
+                    if !Cfg.debug then Format.printf "removed (third instance) (%d,%d)\n" (fst p) (snd p)
                 )
             )
         );
@@ -278,7 +288,7 @@ module Make (M:S) = struct
                 best_moves := path
             )
         in
-        if not !quiet then (
+        if not !Cfg.quiet then (
             Format.printf "Trimmed useless paths\n";
             show_path (translator ice_full ice_trim ice_trim) Format.std_formatter [];
             Format.printf "Single-move optimization\n";
@@ -289,18 +299,18 @@ module Make (M:S) = struct
             ignore PQ.(insert pq (nb, 1, 0) (HSet.(remove ice_init start), start, []));
             while PQ.size pq > 0 do
                 flush stdout;
-                if not !quiet then Format.printf "===============\nPQ size: %d\n" (PQ.size pq);
+                if not !Cfg.quiet then Format.printf "===============\nPQ size: %d\n" (PQ.size pq);
                 let node = PQ.extract_min pq in
                 let (nb, len, dist) = PQ.key node in
                 let (ice, pos, path) = PQ.value node in
                 solution len path;
-                if not !quiet then Format.printf "Reach: %d\nBest: %d\n" HSet.(cardinal ice) !best_length;
-                if !debug then (
+                if not !Cfg.quiet then Format.printf "Reach: %d\nBest: %d\n" HSet.(cardinal ice) !best_length;
+                if !Cfg.debug then (
                     HSet.iter ice (fun (i,j) -> Format.printf "{%d|%d}" i j);
                     Format.printf "\n"
                 );
-                if !display then show_path (translator ice_full ice_trim ice) Format.std_formatter (Hex.path_of_moves start (List.rev path));
-                if not !debug && !display then print_up ();
+                if !Cfg.display then show_path (translator ice_full ice_trim ice) Format.std_formatter (Hex.path_of_moves start (List.rev path));
+                if not !Cfg.debug && !Cfg.display then print_up ();
                 if HMap.check (ice, pos) then (
                     HMap.visit (ice, pos);
                     allowed_moves ice pos
@@ -317,36 +327,36 @@ module Make (M:S) = struct
                         acc
                     ))
                     |> List.flatten
-                    |> inspect ~b:!debug (fun x -> (
+                    |> Cfg.(inspect ~b:!debug (fun x -> (
                         let ((nb, len, dist), (ice, pos, path)) = x in
                         Format.printf "Visiting (%d,%d) [%d]\n" (fst pos) (snd pos) len
-                    ))
+                    )))
                     |> List.filter (fun x -> ( (* remove those whose potential is less than a solution already found *)
                         let ((nb,_,_), _) = x in
                         nb > !best_length
                     ))
-                    |> inspect ~b:!debug (fun _ -> Format.printf "1 insertion\n")
+                    |> Cfg.(inspect ~b:!debug (fun _ -> Format.printf "1 insertion\n"))
                     |> List.iter (fun (k, v) -> ignore PQ.(insert pq k v));
                 );
             done
         in
         (* Phase 1 *)
         bestpath ice_single start single_moves;
-        if not !quiet then (
+        if not !Cfg.quiet then (
             Format.printf "Best path with single moves:\n";
             show_path (translator ice_full ice_trim ice_single) Format.std_formatter (Hex.path_of_moves start (List.rev !best_moves));
         );
         HMap.reset ();
         (* Phase 2 *)
-        if not !quiet then Format.printf "Switching to extremal moves\n";
+        if not !Cfg.quiet then Format.printf "Switching to extremal moves\n";
         bestpath ice_trim start extremal_moves;
-        if not !quiet then (
+        if not !Cfg.quiet then (
             Format.printf "Best path with extremal moves:\n";
             show_path (translator ice_full ice_trim ice_trim) Format.std_formatter (Hex.path_of_moves start (List.rev !best_moves));
         );
         (* Phase 3 *)
         HMap.reset ();
-        if not !quiet then Format.printf "Switching to arbitrary moves\n";
+        if not !Cfg.quiet then Format.printf "Switching to arbitrary moves\n";
         bestpath ice_trim start all_moves;
         print_down ();
         (!best_length, List.rev !best_moves)
