@@ -52,6 +52,9 @@ module type SET = sig
 
   (** Itération d'une fonction sur les éléments d'un ensemble *)
   val iter : t -> (elt -> unit) -> unit
+
+  (** Comparison function to sort in decreasing order of cardinal *)
+  val compare : t -> t -> int
 end
 
 (** Implémentation de [SET] étant donné un [F:FIN]. *)

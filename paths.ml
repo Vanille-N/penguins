@@ -17,6 +17,12 @@ module Make (M:S) = struct
     end
     module HSet = Bitset.Make(Pos)
 
+    let print_up ?n:(n=Array.length M.grid + 5) () =
+        if !ansi_fmt then Format.printf "\x1b[%dA" n
+
+    let print_down ?n:(n=Array.length M.grid + 5) () =
+        if !ansi_fmt then Format.printf "\x1b[%dB" n
+
     let show_path translator fmt ps =
         let gr = Array.mapi (fun i line ->
             Array.mapi (fun j b ->
@@ -159,13 +165,14 @@ module Make (M:S) = struct
         let trim = ref ice in
         (* when a position splits the board into 3ccs, one must be unreachable *)
         HSet.iter ice (fun p -> (
-            let ccs = split ice p |> List.sort (fun cc1 cc2 -> HSet.(compare (cardinal cc2) (cardinal cc1))) in
-            Format.printf "Position (%d,%d), ccs %d\n" (fst p) (snd p) (List.length ccs);
+            let ccs = split ice p
+                |> List.sort HSet.compare
+            in
             if List.length ccs > 2 then (
                 List.iter (fun cc ->
                     HSet.iter cc (fun p ->
                         trim := HSet.remove !trim p;
-                        Format.printf "removed %d %d\n" (fst p) (snd p)
+                        if !debug then Format.printf "removed (first instance) (%d,%d)\n" (fst p) (snd p)
                     )
                 ) List.(ccs |> tl |> tl);
             )
@@ -174,7 +181,9 @@ module Make (M:S) = struct
         let ice = !trim in
         let turns = ref [] in
         HSet.iter ice (fun p ->
-            let ccs = split ice p |> List.sort (fun cc1 cc2 -> HSet.(compare (cardinal cc2) (cardinal cc1))) in
+            let ccs = split ice p
+                |> List.sort HSet.compare
+            in
             if List.length ccs = 2 then (
                 let (a, b) = List.((hd ccs, ccs |> tl |> hd)) in 
                 if HSet.(member a startpos) && unaligned p a b then (
@@ -183,7 +192,7 @@ module Make (M:S) = struct
             )
         );
         let turns = !turns
-            |> List.sort (fun cc1 cc2 -> HSet.(compare (cardinal cc2) (cardinal cc1)))
+            |> List.sort HSet.compare
         in
         if List.length turns > 0 then (
             turns
@@ -191,7 +200,7 @@ module Make (M:S) = struct
             |> List.iter (fun set ->
                 HSet.iter set (fun p ->
                     trim := HSet.remove !trim p;
-                    Format.printf "removed (second instance) %d %d\n" (fst p) (snd p)
+                    if !debug then Format.printf "removed (second instance) (%d,%d)\n" (fst p) (snd p)
                 )
             )
         );
@@ -202,7 +211,9 @@ module Make (M:S) = struct
         (* if a position splits the board into two (or 3) ccs, only one of them may be explored *) 
         let turns = ref [] in
         HSet.iter ice (fun p ->
-            let ccs = split ice p |> List.sort (fun cc1 cc2 -> HSet.(compare (cardinal cc2) (cardinal cc1))) in
+            let ccs = split ice p
+                |> List.sort HSet.compare
+            in
             if List.length ccs > 1 then (
                 let (bg, rest) = List.((hd ccs, tl ccs)) in
                 if HSet.(member bg startpos) then (
@@ -211,7 +222,7 @@ module Make (M:S) = struct
             )
         );
         let turns = !turns
-            |> List.sort (fun cc1 cc2 -> HSet.(compare (cardinal cc2) (cardinal cc1)))
+            |> List.sort HSet.compare
         in
         if List.length turns > 0 then (
             turns
@@ -219,7 +230,7 @@ module Make (M:S) = struct
             |> List.iter (fun set ->
                 HSet.iter set (fun p ->
                     trim := HSet.remove !trim p;
-                    Format.printf "removed (third instance) %d %d\n" (fst p) (snd p)
+                    if !debug then Format.printf "removed (third instance) (%d,%d)\n" (fst p) (snd p)
                 )
             )
         );
@@ -284,9 +295,7 @@ module Make (M:S) = struct
                 Format.printf "Reach: %d\nBest: %d\n" HSet.(cardinal ice) !best_length;
                 if !debug then HSet.iter ice (fun (i,j) -> Format.printf "{%d|%d}" i j); Format.printf "\n";
                 if !display then show_path (translator ice_full ice_trim ice) Format.std_formatter (Hex.path_of_moves start (List.rev path));
-                if not !debug && !display && !ansi_fmt then (
-                    Format.printf "\x1b[%dA\n" (Array.length M.grid + 6)
-                );
+                if not !debug && !display then print_up ();
                 if HMap.check (ice, pos) then (
                     HMap.visit (ice, pos);
                     allowed_moves ice pos
@@ -316,16 +325,21 @@ module Make (M:S) = struct
                 );
             done
         in
+        (* Phase 1 *)
         bestpath ice_single start single_moves;
+        Format.printf "Best path with single moves:\n";
+        show_path (translator ice_full ice_trim ice_single) Format.std_formatter (Hex.path_of_moves start (List.rev !best_moves));
         HMap.reset ();
+        (* Phase 2 *)
         Format.printf "Switching to extremal moves\n";
         bestpath ice_trim start extremal_moves;
+        Format.printf "Best path with extremal moves:\n";
+        show_path (translator ice_full ice_trim ice_trim) Format.std_formatter (Hex.path_of_moves start (List.rev !best_moves));
+        (* Phase 3 *)
         HMap.reset ();
         Format.printf "Switching to arbitrary moves\n";
         bestpath ice_trim start all_moves;
-        if not !debug && !display && !ansi_fmt then (
-            Format.printf "\x1b[%dB" (Array.length M.grid + 6)
-        );
+        print_down ();
         (!best_length, List.rev !best_moves)
 end
             
