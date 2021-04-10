@@ -277,23 +277,28 @@ module Make (M:S) = struct
                 best_length := len;
                 best_moves := path
             )
-        in 
-        Format.printf "Trimmed useless paths\n";
-        show_path (translator ice_full ice_trim ice_trim) Format.std_formatter [];
-        Format.printf "Single-move optimization\n";
-        show_path (translator ice_full ice_trim ice_single) Format.std_formatter [];
+        in
+        if not !quiet then (
+            Format.printf "Trimmed useless paths\n";
+            show_path (translator ice_full ice_trim ice_trim) Format.std_formatter [];
+            Format.printf "Single-move optimization\n";
+            show_path (translator ice_full ice_trim ice_single) Format.std_formatter [];
+        );
         let bestpath ice_init start allowed_moves =
             let pq = PQ.create 1000000 (0,0,0) (HSet.empty, (0,0), []) in
             ignore PQ.(insert pq (nb, 1, 0) (HSet.(remove ice_init start), start, []));
             while PQ.size pq > 0 do
                 flush stdout;
-                Format.printf "===============\nPQ size: %d\n" (PQ.size pq);
+                if not !quiet then Format.printf "===============\nPQ size: %d\n" (PQ.size pq);
                 let node = PQ.extract_min pq in
                 let (nb, len, dist) = PQ.key node in
                 let (ice, pos, path) = PQ.value node in
                 solution len path;
-                Format.printf "Reach: %d\nBest: %d\n" HSet.(cardinal ice) !best_length;
-                if !debug then HSet.iter ice (fun (i,j) -> Format.printf "{%d|%d}" i j); Format.printf "\n";
+                if not !quiet then Format.printf "Reach: %d\nBest: %d\n" HSet.(cardinal ice) !best_length;
+                if !debug then (
+                    HSet.iter ice (fun (i,j) -> Format.printf "{%d|%d}" i j);
+                    Format.printf "\n"
+                );
                 if !display then show_path (translator ice_full ice_trim ice) Format.std_formatter (Hex.path_of_moves start (List.rev path));
                 if not !debug && !display then print_up ();
                 if HMap.check (ice, pos) then (
@@ -327,17 +332,21 @@ module Make (M:S) = struct
         in
         (* Phase 1 *)
         bestpath ice_single start single_moves;
-        Format.printf "Best path with single moves:\n";
-        show_path (translator ice_full ice_trim ice_single) Format.std_formatter (Hex.path_of_moves start (List.rev !best_moves));
+        if not !quiet then (
+            Format.printf "Best path with single moves:\n";
+            show_path (translator ice_full ice_trim ice_single) Format.std_formatter (Hex.path_of_moves start (List.rev !best_moves));
+        );
         HMap.reset ();
         (* Phase 2 *)
-        Format.printf "Switching to extremal moves\n";
+        if not !quiet then Format.printf "Switching to extremal moves\n";
         bestpath ice_trim start extremal_moves;
-        Format.printf "Best path with extremal moves:\n";
-        show_path (translator ice_full ice_trim ice_trim) Format.std_formatter (Hex.path_of_moves start (List.rev !best_moves));
+        if not !quiet then (
+            Format.printf "Best path with extremal moves:\n";
+            show_path (translator ice_full ice_trim ice_trim) Format.std_formatter (Hex.path_of_moves start (List.rev !best_moves));
+        );
         (* Phase 3 *)
         HMap.reset ();
-        Format.printf "Switching to arbitrary moves\n";
+        if not !quiet then Format.printf "Switching to arbitrary moves\n";
         bestpath ice_trim start all_moves;
         print_down ();
         (!best_length, List.rev !best_moves)
