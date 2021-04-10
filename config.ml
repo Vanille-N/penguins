@@ -1,6 +1,12 @@
 let debug = ref false
-let display = ref false
-let ansi_fmt = ref false
+let display = ref true
+let ansi_fmt = ref true
+let quiet = ref false
+
+let first_pass = ref true
+let extremal_pass = ref true
+let trim_general = ref true
+let trim_single = ref true
 
 let rec any fn = function
     | [] -> false
