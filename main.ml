@@ -4,80 +4,61 @@ type kind = Optimize | Display | Help | File
 type arg = End | Error of string | Arg of kind * string
 
 let print_help_general () =
-    Format.printf
-"pingouin [ARGS] [FILE]
-    where ARGS is of
-        -o[Optimize-flags]
-        -d[Display-flags]
-        -h[Help-flags]
-
-"
+    Format.printf "%s\n%s\n%s\n%s\n%s\n\n"
+        "pingouin [ARGS] [FILE]"
+        "   where ARGS is of"
+        "       -o[Optimize-flags]"
+        "       -d[Display-flags]"
+        "       -h[Help-flags]"
 
 let print_help_extensive = function
-    | Optimize -> Format.printf
-"
-Optimize:
- 1  -> explore with restriction of moves to direct neighbors
- X  -> restrict moves to direct neighbors or furthest away
- T  -> trim positions that can be proved useless to reach
- t  -> trim positions that are useless for single moves
-    NOTE: [t] is useless if [1] is not provided
+    | Optimize -> Format.printf "%s\n%s\n%s\n%s\n\n%s\n\n"
+        "Optimize:"
+        "  1  -> explore with restriction of moves to direct neighbors"
+        "  X  -> restrict moves to direct neighbors or furthest away"
+        "  T  -> trim positions that can be proved useless to reach"
+        "   DEFAULT: -o1XT"
+    | Display -> Format.printf "%s\n%s\n%s\n%s\n%s\n\n%s\n%s\n%s\n%s\n\n%s\n\n"
+        "Display:"
+        "  D  -> display current progress of search"
+        "  G  -> print extensive debug information"
+        "  A  -> use ANSI escape sequences for better display"
+        "  Q  -> quiet, do not print anything"
+        "   NOTE: [A] is disabled if [G] is active"
+        "   NOTE: all are useless if [Q] is active"
+        "   NOTE: [D],[G],[A] all carry a performance penalty"
+        "   NOTE: if [Q] is active, the answer is the return code minus 100"
+        "   DEFAULT: -dDA"
+    | Help -> Format.printf "%s\n%s\n%s\n%s\n%s\n\n%s\n\n"
+        "Help:"
+        "  H  -> print help about Help (this)"
+        "  O  -> print help about Optimizations"
+        "  D  -> print help about Display"
+        "  F  -> print help about File"
+        "   DEFAULT: -hHODF"
+    | File -> Format.printf "%s\n%s\n%s\n\n%s\n\n"
+        "File:"
+        "    [FILE]"
+        " foo  -> read problem from file [foo]"   
+        "   DEFAULT: read from stdin"
 
-    DEFAULT: -o1XTt
-"
-    | Display -> Format.printf
-"
-Display:
- D  -> display current progress of search
- G  -> print extensive debug information
- A  -> use ANSI escape sequences for better display
- Q  -> quiet, do not print anything
-    NOTE: [A] is disabled if [G] is active
-    NOTE: all are useless if [Q] is active
-    NOTE: [D],[G],[A] all carry a performance penalty
-    NOTE: if [Q] is active, the answer is the return code minus 100
-
-    DEFAULT: -dDA
-"
-    | Help -> Format.printf
-"
-Help:
- H  -> print help about Help (this)
- O  -> print help about Optimizations
- D  -> print help about Display
- F  -> print help about File
-    
-    DEFAULT: -hHODF
-"
-    | File -> Format.printf
-"
-File:
-    [FILE]
- foo  -> read problem from file [foo]
-    
-    DEFAULT: read from stdin
-
-"
 let print_help_minimal () =
-    Format.printf
-"Optimize: -o[1XTt] = -o1XTt
-Display: -d[DGAQ] = -dDA
-Help: -h[HODF] = -hHODF
-File: [foo] = stdin
-"
+    Format.printf "%s\n%s\n%s\n%s\n\n"
+        "Optimize: -o[1XT] = -o1XTt"
+        "Display: -d[DGAQ] = -dDA"
+        "Help: -h[HODF] = -hHODF"
+        "File: [foo] = stdin"
 
 let arg_interprete kind flags =
     match kind with
         | Optimize -> Config.(
             first_pass := false;
             extremal_pass := false;
-            trim_general := false;
-            trim_single := false;
+            trim := false;
             String.iter (function
                 | '1' -> first_pass := true
                 | 'X' -> extremal_pass := true
-                | 'T' -> trim_general := true
-                | 't' -> trim_single := true
+                | 'T' -> trim := true
                 | c -> (
                     Format.printf "'%c' is invalid for kind Optimize\n\n" c;
                     print_help_general ();
@@ -86,7 +67,6 @@ let arg_interprete kind flags =
                     exit 1
                 )
             ) flags;
-            if not !first_pass then trim_single := false
         )
         | Display -> Config.(
             debug := false;
