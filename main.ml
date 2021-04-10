@@ -18,17 +18,12 @@ let print_help_extensive = function
 "
 Optimize:
  1  -> explore with restriction of moves to direct neighbors
- 2  -> restrict moves to direct neighbors or furthest away
- 3  -> all moves
+ X  -> restrict moves to direct neighbors or furthest away
  T  -> trim positions that can be proved useless to reach
  t  -> trim positions that are useless for single moves
-    NOTE: if [3] is not specified then the solution may be invalid
-          with regards to the rules of the game
-    NOTE: [1],[2],[3] are always executed in that order no matter
-          which argument is provided first
     NOTE: [t] is useless if [1] is not provided
 
-    DEFAULT: -o123Tt
+    DEFAULT: -o1XTt
 "
     | Display -> Format.printf
 "
@@ -40,17 +35,19 @@ Display:
     NOTE: [A] is disabled if [G] is active
     NOTE: all are useless if [Q] is active
     NOTE: [D],[G],[A] all carry a performance penalty
+    NOTE: if [Q] is active, the answer is the return code minus 100
 
     DEFAULT: -dDA
 "
     | Help -> Format.printf
 "
 Help:
+ H  -> print help about Help (this)
  O  -> print help about Optimizations
  D  -> print help about Display
  F  -> print help about File
     
-    DEFAULT: -hODF
+    DEFAULT: -hHODF
 "
     | File -> Format.printf
 "
@@ -61,18 +58,90 @@ File:
     DEFAULT: read from stdin
 
 "
-let print_help_minimal = function
-    | Optimize -> Format.printf "Optimize: -o[123Tt] = -o123Tt\n"
-    | Display -> Format.printf "Display: -d[DGAQ] = -dDA\n"
-    | Help -> Format.printf "Help: -h[ODF] = -hODF\n"
-    | File -> Format.printf "File: [foo] = stdin\n"
+let print_help_minimal () =
+    Format.printf
+"Optimize: -o[1XTt] = -o1XTt
+Display: -d[DGAQ] = -dDA
+Help: -h[HODF] = -hHODF
+File: [foo] = stdin
+"
 
-let arg_interprete kind flag =
+let arg_interprete kind flags =
     match kind with
-        | Optimize -> ()
-        | Display -> ()
-        | Help -> ()
-        | File -> ()
+        | Optimize -> Config.(
+            first_pass := false;
+            extremal_pass := false;
+            trim_general := false;
+            trim_single := false;
+            String.iter (function
+                | '1' -> first_pass := true
+                | 'X' -> extremal_pass := true
+                | 'T' -> trim_general := true
+                | 't' -> trim_single := true
+                | c -> (
+                    Format.printf "'%c' is invalid for kind Optimize\n\n" c;
+                    print_help_general ();
+                    print_help_minimal ();
+                    print_help_extensive Optimize;
+                    exit 1
+                )
+            ) flags;
+            if not !first_pass then trim_single := false
+        )
+        | Display -> Config.(
+            debug := false;
+            display := false;
+            ansi_fmt := false;
+            quiet := false;
+            String.iter (function
+                | 'D' -> display := true
+                | 'G' -> debug := true
+                | 'A' -> ansi_fmt := true
+                | 'Q' -> quiet := true
+                | c -> (
+                    Format.printf "'%c' is invalid for kind Display\n\n" c;
+                    print_help_general ();
+                    print_help_minimal ();
+                    print_help_extensive Display;
+                    exit 1
+                )
+            ) flags;
+            if !debug then ansi_fmt := false;
+            if !quiet then (
+                ansi_fmt := false;
+                display := false;
+                ansi_fmt := false
+            )
+        )
+        | Help -> (
+            let none = ref true in
+            let fo = ref false in
+            let fd = ref false in
+            let ff = ref false in
+            let fh = ref false in
+            String.iter (function
+                | 'O' -> (fo := true; none := false)
+                | 'D' -> (fd := true; none := false)
+                | 'F' -> (ff := true; none := false)
+                | 'H' -> (fh := true; none := false)
+                | c -> (
+                    Format.printf "'%c' is invalid for kind Help\n\n" c;
+                    print_help_general ();
+                    print_help_minimal ();
+                    print_help_extensive Help;
+                    exit 1
+                )
+            ) flags;
+            print_help_general ();
+            if !fo || !none then print_help_extensive Optimize;
+            if !fd || !none then print_help_extensive Display;
+            if !ff || !none then print_help_extensive File;
+            if !fh || !none then print_help_extensive Help;
+            exit 10
+        )
+        | File -> (
+            input := open_in flags
+        )
 
 let () =
     (* Parse command line arguments *)
@@ -105,19 +174,15 @@ let () =
             | Error msg -> (
                 Format.printf "%s\n\n" msg;
                 print_help_general ();
-                print_help_minimal Help;
-                print_help_minimal File;
-                print_help_minimal Display;
-                print_help_minimal Optimize;
-                exit 255
+                print_help_minimal ();
+                exit 1
             )
             | Arg (kind, flags) -> (
                 arg_interprete kind flags;
                 parse ()
             )
     in
-    parse ();
-    failwith "End"
+    parse ()
 
 let (start, grid) = Hex.from_channel !input
 
@@ -130,5 +195,7 @@ module Path = Paths.Make(M)
 let () =
     let (len, moves) = Path.maxpath start in
     let path = Hex.path_of_moves start moves in
-    Path.pp_path Format.std_formatter path
+    if not !Config.quiet
+    then Path.pp_path Format.std_formatter path
+    else exit (List.length path + 100)
 
