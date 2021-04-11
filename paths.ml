@@ -199,11 +199,6 @@ module Make (M:S) = struct
 
     let maxpath start =
         let ice_full = accessible HSet.(init (fun (i,j) -> M.grid.(i).(j))) start in
-        let positions = (
-            let positions = ref [] in
-            HSet.iter ice_full (fun p -> positions := p :: !positions);
-            !positions
-        ) in
         let nb = HSet.cardinal ice_full in
         let board_splits = (
             positions
