@@ -5,6 +5,7 @@ let quiet = ref false
 
 let first_pass = ref true
 let extremal_pass = ref true
+let trim = ref true
 
 let inspect ?b:(b=true) fn lst =
     if b then List.iter fn lst;

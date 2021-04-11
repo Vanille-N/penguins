@@ -12,11 +12,12 @@ let print_help_general () =
         "       -h[Help-flags]"
 
 let print_help_extensive = function
-    | Optimize -> Format.printf "%s\n%s\n%s\n\n%s\n\n"
+    | Optimize -> Format.printf "%s\n%s\n%s\n%s\n\n%s\n\n"
         "Optimize:"
         "  1  -> explore with restriction of moves to direct neighbors"
         "  X  -> restrict moves to direct neighbors or furthest away"
-        "   DEFAULT: -o1X"
+        "  T  -> recursively trim positions than can be eliminated"
+        "   DEFAULT: -o1XT"
     | Display -> Format.printf "%s\n%s\n%s\n%s\n%s\n\n%s\n%s\n%s\n%s\n\n%s\n\n"
         "Display:"
         "  D  -> display current progress of search"
@@ -43,7 +44,7 @@ let print_help_extensive = function
 
 let print_help_minimal () =
     Format.printf "%s\n%s\n%s\n%s\n\n"
-        "Optimize: -o[1X] = -o1X"
+        "Optimize: -o[1XT] = -o1XT"
         "Display: -d[DGAQ] = -dDA"
         "Help: -h[HODF] = -hHODF"
         "File: [foo] = stdin"
@@ -53,9 +54,11 @@ let arg_interprete kind flags =
         | Optimize -> Config.(
             first_pass := false;
             extremal_pass := false;
+            trim := false;
             String.iter (function
                 | '1' -> first_pass := true
                 | 'X' -> extremal_pass := true
+                | 'T' -> trim := true
                 | c -> (
                     Format.printf "'%c' is invalid for kind Optimize\n\n" c;
                     print_help_general ();

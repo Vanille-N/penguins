@@ -200,7 +200,12 @@ module Make (M:S) = struct
     let maxpath start =
         let ice_full = accessible HSet.(init (fun (i,j) -> M.grid.(i).(j))) start in
         let nb = HSet.cardinal ice_full in
-        let board_splits = (
+        let positions = (
+            let positions = ref [] in
+            HSet.iter ice_full (fun p -> positions := p :: !positions);
+            !positions
+        ) in
+        let board_splits = if !Cfg.trim then (
             positions
             |> List.map (fun p ->
                 let parts = split ice_full p in
@@ -223,7 +228,8 @@ module Make (M:S) = struct
             )
             |> List.filter (function (_, s) -> not (HSet.cardinal s = 1))
             |> List.sort (fun (_,cc) (_,cc') -> HSet.compare cc' cc) (* smallest first *)
-        ) in
+        ) else []
+        in
         let (precalculated: (Hex.pos * HSet.t, best) Hashtbl.t) = Hashtbl.create 100 in
         if not !Cfg.quiet then List.iter (fun (p,s) -> show_path (translator ice_full s) Format.std_formatter []) board_splits;
         let bestpath best ice_init start allowed_moves =
@@ -248,7 +254,7 @@ module Make (M:S) = struct
                 );
                 if !Cfg.display then show_path (translator ice_full ice) Format.std_formatter (Hex.path_of_moves start (List.rev path));
                 if not !Cfg.debug && !Cfg.display then print_up ();
-                if Hashtbl.mem precalculated (pos,ice) then (
+                if !Cfg.trim && Hashtbl.mem precalculated (pos,ice) then (
                     let entry = Hashtbl.find precalculated (pos,ice) in
                     if entry.len + len > best.len then (
                         best.len <- entry.len + len;
@@ -287,24 +293,26 @@ module Make (M:S) = struct
             done
         in
         let ice_trim = ref ice_full in
-        List.iter (fun (p,ice) ->
-            let best = { len=0; path=[]; } in
-            bestpath best HSet.(intersect ice !ice_trim) p all_moves;
-            (*show_path (translator ice ice) Format.std_formatter (Hex.path_of_moves p (List.rev best.path));*)
-            Hashtbl.add precalculated (p,HSet.remove ice p) best;
-            (*show_path (translator ice ice) Format.std_formatter (Hex.path_of_moves p (List.rev best.path));*)
-            let useful_pos = Hex.path_of_moves p (List.rev best.path) in
-            let useful_set = (
-                let s = ref HSet.empty in
-                List.iter (fun p -> s := HSet.add !s p) useful_pos;
-                !s
-            ) in
-            HSet.iter ice (fun p ->
-                if not HSet.(member useful_set p) then
-                    ice_trim := HSet.remove !ice_trim p
-            );
-        ) board_splits;
-        show_path (translator ice_full !ice_trim) Format.std_formatter [];
+        if !Cfg.trim then (
+            List.iter (fun (p,ice) ->
+                let best = { len=0; path=[]; } in
+                bestpath best HSet.(intersect ice !ice_trim) p all_moves;
+                (*show_path (translator ice ice) Format.std_formatter (Hex.path_of_moves p (List.rev best.path));*)
+                Hashtbl.add precalculated (p,HSet.remove ice p) best;
+                (*show_path (translator ice ice) Format.std_formatter (Hex.path_of_moves p (List.rev best.path));*)
+                let useful_pos = Hex.path_of_moves p (List.rev best.path) in
+                let useful_set = (
+                    let s = ref HSet.empty in
+                    List.iter (fun p -> s := HSet.add !s p) useful_pos;
+                    !s
+                ) in
+                HSet.iter ice (fun p ->
+                    if not HSet.(member useful_set p) then
+                        ice_trim := HSet.remove !ice_trim p
+                );
+            ) board_splits;
+            if not !Cfg.quiet then show_path (translator ice_full !ice_trim) Format.std_formatter [];
+        );
         let best = { len=0; path=[]; } in
         (* Phase 1 *)
         if !Cfg.first_pass then (
