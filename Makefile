@@ -1,5 +1,4 @@
-OCAMLFAST = ocamlopt -noassert -unsafe
-OCAMLC = ocamlopt -g
+OCAMLC = ocamlopt -noassert -unsafe
 
 ALL_SRC=$(wildcard *.ml)
 TEST_SRC=$(wildcard *test*)
@@ -18,21 +17,19 @@ PDF=$(TEX:.tex=.pdf)
 default: $(EXEC_MOD) pingouin $(PDF)
 
 pingouin: $(EXEC_MOD)
-	$(OCAMLFAST) $(EXEC_MOD) -o pingouin
+	$(OCAMLC) $(EXEC_MOD) -o pingouin
 
 test: $(TEST_MOD)
 	$(OCAMLC) $(TEST_MOD) -o test
 	./test
 
 perf: $(PERF_MOD)
-	$(OCAMLFAST) $(PERF_MOD) -o perf
+	$(OCAMLC) $(PERF_MOD) -o perf
 	./perf
 
-FILE=problems/large4
-prof: $(EXEC_MOD)
-	ocamlcp -p a $(EXEC) -o prof
-	./prof < $(FILE)
-	ocamlprof paths.ml
+benchreport:
+	python3 reporter.py
+	pdflatex --interaction=nonstopmode --halt-on-error bench-report.tex
 
 SOURCES = $(wildcard *.ml) $(wildcard *mli)
 .depend: $(SOURCES)
@@ -44,20 +41,12 @@ SOURCES = $(wildcard *.ml) $(wildcard *mli)
 %.cmi: %.mli Makefile
 	$(OCAMLC) -c $<
 
-tarball:
-	rm -rf prog2_pingouin
-	mkdir prog2_pingouin
-	cp *.mli Makefile prog2_pingouin
-	mkdir prog2_pingouin/problems
-	cp problems/* prog2_pingouin/problems
-	tar zcvf prog2_pingouin.tar.gz prog2_pingouin/
-
 clean:
 	rm -f pingouin perf prof test
 	rm -f *.cmx *.cmo *.cmi *.o *.out
 	rm -f perf.data* *.dump
 
-.PHONY: test clean perf prof
+.PHONY: test clean perf
 
 %.pdf: %.tex
 	rubber -d $<

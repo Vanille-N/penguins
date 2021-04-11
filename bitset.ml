@@ -19,6 +19,7 @@ module type SET = sig
   val subset : t -> t -> bool
 
   val iter : t -> (elt -> unit) -> unit
+  val setminus : t -> t -> t
   val compare : t -> t -> int
 end
 
@@ -84,6 +85,14 @@ module Make (F : FIN) : SET with type elt = F.t = struct
             if member_bit set i then
                 fn (F.of_int i)
         done
+
+    let setminus set set' =
+        let set = ref set in
+        for i = 0 to F.max-1 do
+            if member_bit set' i then
+                set := remove_bit !set i
+        done;
+        !set
 
     let compare s s' =
         compare (cardinal s') (cardinal s)
