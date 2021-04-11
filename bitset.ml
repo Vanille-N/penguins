@@ -20,6 +20,8 @@ module type SET = sig
 
   val iter : t -> (elt -> unit) -> unit
   val setminus : t -> t -> t
+  val union : t -> t -> t
+  val intersect : t -> t -> t
   val compare : t -> t -> int
 end
 
@@ -93,6 +95,22 @@ module Make (F : FIN) : SET with type elt = F.t = struct
                 set := remove_bit !set i
         done;
         !set
+
+    let union set set' =
+        let set = ref set in
+        for i = 0 to F.max-1 do
+            if member_bit set' i then
+                set := add_bit !set i
+        done;
+        !set
+
+    let intersect set set' =
+        let s = ref empty in
+        for i = 0 to F.max-1 do
+            if member_bit set i && member_bit set' i then
+                s := add_bit !s i
+        done;
+        !s
 
     let compare s s' =
         compare (cardinal s') (cardinal s)

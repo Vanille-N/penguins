@@ -53,8 +53,10 @@ module type SET = sig
   (** Itération d'une fonction sur les éléments d'un ensemble *)
   val iter : t -> (elt -> unit) -> unit
     
-  (** set difference *)
+  (** set operations *)
   val setminus : t -> t -> t
+  val union : t -> t -> t
+  val intersect : t -> t -> t
 
   (** Comparison function to sort in decreasing order of cardinal *)
   val compare : t -> t -> int

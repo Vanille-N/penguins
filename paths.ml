@@ -221,12 +221,16 @@ module Make (M:S) = struct
                 )
                 | _ -> false
             )
-            |> List.map (fun (p, l, _) -> (p, HSet.setminus ice_full (List.hd l)))
+            |> List.map (function
+                | (p, l, [r]) -> (p, HSet.add r p)
+                | (p, r, [r1;r2]) -> (p, HSet.add (HSet.union r1 r2) p)
+                | _ -> failwith "Unreachable @ Paths::Make::maxpath"
+            )
             |> List.filter (function (_, s) -> not (HSet.cardinal s = 1))
             |> List.sort (fun (_,cc) (_,cc') -> HSet.compare cc' cc) (* smallest first *)
         ) in
         let (precalculated: (Hex.pos * HSet.t, best) Hashtbl.t) = Hashtbl.create 100 in
-        List.iter (fun (p,s) -> show_path (translator ice_full s) Format.std_formatter []) board_splits;
+        if not !Cfg.quiet then List.iter (fun (p,s) -> show_path (translator ice_full s) Format.std_formatter []) board_splits;
         let bestpath best ice_init start allowed_moves =
             HMap.reset ();
             let pq = PQ.create 1000000 (0,0,0) (HSet.empty, (0,0), []) in
@@ -249,9 +253,7 @@ module Make (M:S) = struct
                 );
                 if !Cfg.display then show_path (translator ice_full ice) Format.std_formatter (Hex.path_of_moves start (List.rev path));
                 if not !Cfg.debug && !Cfg.display then print_up ();
-                Format.printf "Precalc ?\n";
                 if Hashtbl.mem precalculated (pos,ice) then (
-                    Format.printf "Precalculated path\n";
                     let entry = Hashtbl.find precalculated (pos,ice) in
                     if entry.len + len > best.len then (
                         best.len <- entry.len + len;
@@ -289,17 +291,29 @@ module Make (M:S) = struct
                 );
             done
         in
+        let ice_trim = ref ice_full in
         List.iter (fun (p,ice) ->
             let best = { len=0; path=[]; } in
-            bestpath best ice p all_moves;
-            show_path (translator ice ice) Format.std_formatter (Hex.path_of_moves p (List.rev best.path));
-            Hashtbl.add precalculated (p,ice) best;
+            bestpath best HSet.(intersect ice !ice_trim) p all_moves;
+            (*show_path (translator ice ice) Format.std_formatter (Hex.path_of_moves p (List.rev best.path));*)
+            Hashtbl.add precalculated (p,HSet.remove ice p) best;
+            (*show_path (translator ice ice) Format.std_formatter (Hex.path_of_moves p (List.rev best.path));*)
+            let useful_pos = Hex.path_of_moves p (List.rev best.path) in
+            let useful_set = (
+                let s = ref HSet.empty in
+                List.iter (fun p -> s := HSet.add !s p) useful_pos;
+                !s
+            ) in
+            HSet.iter ice (fun p ->
+                if not HSet.(member useful_set p) then
+                    ice_trim := HSet.remove !ice_trim p
+            );
         ) board_splits;
-        failwith "AAA";
+        show_path (translator ice_full !ice_trim) Format.std_formatter [];
         let best = { len=0; path=[]; } in
         (* Phase 1 *)
         if !Cfg.first_pass then (
-            bestpath best ice_full start single_moves;
+            bestpath best !ice_trim start single_moves;
             if not !Cfg.quiet then (
                 Format.printf "Best path with single moves:\n";
                 show_path (translator ice_full ice_full) Format.std_formatter (Hex.path_of_moves start (List.rev best.path));
@@ -308,7 +322,7 @@ module Make (M:S) = struct
         if !Cfg.extremal_pass then (
             (* Phase X *)
             if not !Cfg.quiet then Format.printf "Switching to extremal moves\n";
-            bestpath best ice_full start extremal_moves;
+            bestpath best !ice_trim start extremal_moves;
             if not !Cfg.quiet then (
                 Format.printf "Best path with extremal moves:\n";
                 show_path (translator ice_full ice_full) Format.std_formatter (Hex.path_of_moves start (List.rev best.path));
@@ -316,7 +330,7 @@ module Make (M:S) = struct
         );
         (* Final phase *)
         if not !Cfg.quiet then Format.printf "Switching to arbitrary moves\n";
-        bestpath best ice_full start all_moves;
+        bestpath best !ice_trim start all_moves;
         print_down ();
         (best.len, List.rev best.path)
 end
