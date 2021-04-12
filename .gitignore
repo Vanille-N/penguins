@@ -16,3 +16,7 @@ pingouin
 test
 perf
 prof
+
+
+bench-results.txt
+bench-results.tex
