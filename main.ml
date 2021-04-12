@@ -12,12 +12,11 @@ let print_help_general () =
         "       -h[Help-flags]"
 
 let print_help_extensive = function
-    | Optimize -> Format.printf "%s\n%s\n%s\n%s\n%s\n\n%s\n\n"
+    | Optimize -> Format.printf "%s\n%s\n%s\n%s\n\n%s\n\n"
         "Optimize:"
         "  1  -> explore with restriction of moves to direct neighbors"
         "  X  -> restrict moves to direct neighbors or furthest away"
         "  T  -> recursively trim positions than can be eliminated"
-        "  D  -> explore paths in depth-first"
         "   DEFAULT: -o1XT"
     | Display -> Format.printf "%s\n%s\n%s\n%s\n%s\n\n%s\n%s\n%s\n%s\n\n%s\n\n"
         "Display:"
@@ -61,7 +60,6 @@ let arg_interprete kind flags =
                 | '1' -> first_pass := true
                 | 'X' -> extremal_pass := true
                 | 'T' -> trim := true
-                | 'D' -> depth_first := true
                 | c -> (
                     Format.printf "'%c' is invalid for kind Optimize\n\n" c;
                     print_help_general ();

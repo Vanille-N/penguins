@@ -172,10 +172,7 @@ module Make (M:S) = struct
 
     module Keys : (Priority.ORDERED with type t = key) = struct
         type t = key
-        let compare =
-            if !Cfg.depth_first
-            then fun (r1,l1,d1) (r2,l2,d2) -> compare (-l1,-r1,d1) (-l2,-r2,d2)
-            else fun (r1,l1,d1) (r2,l2,d2) -> compare (-r1,-l1,d1) (-r2,-l2,d2)
+        let compare (r1,l1,d1) (r2,l2,d2) = compare (-r1,-l1,d1) (-r2,-l2,d2)
     end
 
     module PQ = Priority.Make(Keys)

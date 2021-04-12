@@ -5,7 +5,7 @@ import sys
 
 outfile = "bench-results.txt"
 
-flags = ['1', 'X', 'T', 'D']
+flags = ['1', 'X', 'T']
 flag_combs = [''.join(flags[k] if i & (1<<k) > 0 else '' for k in range(len(flags))) for i in range(2**len(flags))]
 print(flag_combs)
 
@@ -21,9 +21,15 @@ def sample_file_opt(file, optflags):
         return 35
 
 def measure_file_opt(file, optflags):
-    times = [sample_file_opt(file, optflags) for i in range(5)]
-    times.sort()
-    avg = sum(times) / 5
+    times = []
+    n = 5
+    for i in range(n):
+        t = sample_file_opt(file, optflags)
+        if t > 30:
+            print("Aborted")
+            return 35
+        times.append(t)
+    avg = sum(times) / n
     print("file [{}], opt [{}]: avg {}".format(file, optflags, avg))
     return avg
 
