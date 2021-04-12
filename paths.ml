@@ -172,7 +172,10 @@ module Make (M:S) = struct
 
     module Keys : (Priority.ORDERED with type t = key) = struct
         type t = key
-        let compare (r1,l1,d1) (r2,l2,d2) = compare (-r1,-l1,d1) (-r2,-l2,d2) 
+        let compare =
+            if !Cfg.depth_first
+            then fun (r1,l1,d1) (r2,l2,d2) -> compare (-l1,-r1,d1) (-l2,-r2,d2)
+            else fun (r1,l1,d1) (r2,l2,d2) -> compare (-r1,-l1,d1) (-r2,-l2,d2)
     end
 
     module PQ = Priority.Make(Keys)
@@ -238,7 +241,7 @@ module Make (M:S) = struct
             ignore PQ.(insert pq (nb, 1, 0) (HSet.(remove ice_init start), start, []));
             while PQ.size pq > 0 do
                 flush stdout;
-                if not !Cfg.quiet then Format.printf "===============\nPQ size: %d\n" (PQ.size pq);
+                if !Cfg.display then Format.printf "===============\nPQ size: %d\n" (PQ.size pq);
                 let node = PQ.extract_min pq in
                 let (nb, len, dist) = PQ.key node in
                 let (ice, pos, path) = PQ.value node in
@@ -247,7 +250,7 @@ module Make (M:S) = struct
                     best.len <- len;
                     best.path <- path;
                 );
-                if not !Cfg.quiet then Format.printf "Reach: %d\nBest: %d\n" HSet.(cardinal ice) best.len;
+                if !Cfg.display then Format.printf "Reach: %d\nBest: %d\n" HSet.(cardinal ice) best.len;
                 if !Cfg.debug then (
                     HSet.iter ice (fun (i,j) -> Format.printf "{%d|%d}" i j);
                     Format.printf "\n"

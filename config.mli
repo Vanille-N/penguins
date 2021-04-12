@@ -15,6 +15,7 @@ val quiet : bool ref
 val first_pass : bool ref
 val extremal_pass : bool ref
 val trim : bool ref
+val depth_first : bool ref
 
 
 (** Useful for debug and general-purpose printing *)

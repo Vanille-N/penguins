@@ -6,6 +6,9 @@
 *.out
 *.cmo
 *.dump
+*.aux
+*.log
+*.bak*
 perf.data*
 
 # Binaries

@@ -14,7 +14,7 @@ PERF_MOD=$(PERF:.ml=.cmx)
 TEX=$(wildcard *.tex)
 PDF=$(TEX:.tex=.pdf)
 
-default: $(EXEC_MOD) pingouin $(PDF)
+default: $(EXEC_MOD) pingouin
 
 pingouin: $(EXEC_MOD)
 	$(OCAMLC) $(EXEC_MOD) -o pingouin
@@ -27,9 +27,8 @@ perf: $(PERF_MOD)
 	$(OCAMLC) $(PERF_MOD) -o perf
 	./perf
 
-benchreport:
-	python3 reporter.py
-	pdflatex --interaction=nonstopmode --halt-on-error bench-report.tex
+report:
+	pdflatex --interaction=nonstopmode --halt-on-error README.tex
 
 SOURCES = $(wildcard *.ml) $(wildcard *mli)
 .depend: $(SOURCES)
@@ -48,5 +47,3 @@ clean:
 
 .PHONY: test clean perf
 
-%.pdf: %.tex
-	rubber -d $<
