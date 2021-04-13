@@ -4,7 +4,7 @@ flags = ['1', 'X', 'T']
 flag_combs = [''.join(flags[k] if i & (1<<k) > 0 else '' for k in range(len(flags))) for i in range(2**len(flags))]
 print(flag_combs)
 
-with open("bench-results.txt") as f:
+with open("tex/bench-results.txt") as f:
     data = eval(f.read())
 
 def fmt_data(file, flags):
@@ -33,7 +33,7 @@ def fmt_data(file, flags):
         time = "{:.0f}ms".format(t * 1000)
     return "\\colorbox{{{}}}{{{}}}".format(color, time)
 
-with open("bench-results.tex", 'w') as f:
+with open("tex/bench-results.tex", 'w') as f:
     f.write("\\begin{{tabular}}{{|l{}|}}\n".format('|c' * len(flag_combs)))
     f.write("\\hline\n")
     f.write(''.join(" & \\texttt{{-o{}}}".format(f) for f in flag_combs))

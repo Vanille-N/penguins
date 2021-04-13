@@ -3,7 +3,7 @@ import os
 import subprocess as sp
 import sys
 
-outfile = "bench-results.txt"
+outfile = "tex/bench-results.txt"
 
 flags = ['1', 'X', 'T']
 flag_combs = [''.join(flags[k] if i & (1<<k) > 0 else '' for k in range(len(flags))) for i in range(2**len(flags))]

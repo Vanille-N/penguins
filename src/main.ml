@@ -1,8 +1,15 @@
-let input = ref stdin
+(** Argument parsing, help messages, grid initialization *)
 
+let input = ref stdin
+let read_from_file = ref false
+
+(* Argument category *)
 type kind = Optimize | Display | Help | File
+(* Actual argument *)
 type arg = End | Error of string | Arg of kind * string
 
+(* To be printed whenever any kind of help is provided
+ * (be it due to the [-h] flag or because arguments are incorrect) *)
 let print_help_general () =
     Format.printf "%s\n%s\n%s\n%s\n%s\n\n"
         "pingouin [ARGS] [FILE]"
@@ -11,6 +18,7 @@ let print_help_general () =
         "       -d[Display-flags]"
         "       -h[Help-flags]"
 
+(* Detailed information, only when explicitly asked for *)
 let print_help_extensive = function
     | Optimize -> Format.printf "%s\n%s\n%s\n%s\n\n%s\n\n"
         "Optimize:"
@@ -42,6 +50,7 @@ let print_help_extensive = function
         " foo  -> read problem from file [foo]"   
         "   DEFAULT: read from stdin"
 
+(* Quick reminder for invalid arguments *)
 let print_help_minimal () =
     Format.printf "%s\n%s\n%s\n%s\n\n"
         "Optimize: -o[1XT] = -o1XT"
@@ -49,13 +58,13 @@ let print_help_minimal () =
         "Help: -h[HODF] = -hHODF"
         "File: [foo] = stdin"
 
+(* Parse each flag and set options in [Config] *)
 let arg_interprete kind flags =
     match kind with
         | Optimize -> Config.(
             first_pass := false;
             extremal_pass := false;
             trim := false;
-            depth_first := false;
             String.iter (function
                 | '1' -> first_pass := true
                 | 'X' -> extremal_pass := true
@@ -121,11 +130,12 @@ let arg_interprete kind flags =
             exit 10
         )
         | File -> (
-            input := open_in flags
+            input := open_in flags;
+            read_from_file := false
         )
 
+(* Parse command line arguments *)
 let () =
-    (* Parse command line arguments *)
     let next = (
         let i = ref 1 in
         let len = Array.length Sys.argv in
@@ -165,7 +175,10 @@ let () =
     in
     parse ()
 
-let (start, grid) = Hex.from_channel !input
+(* Initialize grid and searcher *)
+let (start, grid) =
+    if not !read_from_file then Format.printf "Reading problem from stdin\n";
+    Hex.from_channel !input
 
 module M : (Paths.S) = struct
     let grid = grid
@@ -174,8 +187,10 @@ end
 module Path = Paths.Make(M)
 
 let () =
+    (* Computation *)
     let (len, moves) = Path.maxpath start in
     let path = Hex.path_of_moves start moves in
+    (* Display *)
     if not !Config.quiet
     then Path.pp_path Format.std_formatter path
     else Format.printf "%d\n" (List.length path)
