@@ -1,21 +1,23 @@
 (** Display configuration *)
 
-(** should print debug info at each step *)
+(** Should print debug info at each step *)
 val debug : bool ref
-(** should print the current state of the grid at each step *)
+(** Should print the current state of the grid at each step *)
 val display : bool ref
-(** allow special formatting characters *)
+(** Allow special formatting characters *)
 val ansi_fmt : bool ref
-(** print nothing *)
+(** Print nothing *)
 val quiet : bool ref
 
 
-(** Optimize configuration *)
+(** Optimization configuration *)
 
+(** Start with a restriction to single moves *)
 val first_pass : bool ref
+(** Follow with a restriction to single and maximal moves *)
 val extremal_pass : bool ref
+(** Recursively trim useless positions *)
 val trim : bool ref
-val depth_first : bool ref
 
 
 (** Useful for debug and general-purpose printing *)
