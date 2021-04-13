@@ -20,11 +20,14 @@ module Make (M:ORDERED) = struct
     
     let size q = q.size
 
+    (* For obvious performance reasons, [sift] and [trinkle]
+     * perform a rotation and not repeated transpositions *)
     let sift q n =
         let node = q.contents.(n) in
         let rec aux n =
             if n > 0 then (
                 let father = (n - 1) / 2 in
+                (* flip with father ? *)
                 if M.compare q.contents.(father).key node.key > 0 then (
                     q.contents.(n) <- q.contents.(father);
                     aux father
@@ -39,26 +42,29 @@ module Make (M:ORDERED) = struct
         let rec aux n =
             let base = 2 * n + 1 in
             let son = if base >= q.size then (
-                None
+                None (* no son *)
             ) else if base + 1 = q.size then (
-                Some base
+                Some base (* only one son, it has to be the greatest *)
             ) else if M.compare
                 q.contents.(base).key
                 q.contents.(base + 1).key
                 <= 0 then (
+                (* left son is greater *)
                 Some base
             ) else (
+                (* right son is greater *)
                 Some (base + 1)
             ) in match son with
-                | None -> n
+                | None -> n (* insertion is over *)
                 | Some s -> (
                     if M.compare
                         node.key
                         q.contents.(s).key
                         > 0 then (
+                        (* smaller than greatest son, continue insertion *)
                         q.contents.(n) <- q.contents.(s);
                         aux s
-                    ) else n
+                    ) else n (* insertion is over *)
                 )
         in
         let new_pos = aux n in
@@ -84,6 +90,10 @@ module Make (M:ORDERED) = struct
     let key node = node.key
     let value node = node.value
 
+    (* Performance: bad.
+     * Do we care ? Not really because we won't __ever__
+     * use any of [member], [remove], [decrease_key] in 
+     * performance-sensitive code *)
     let find q node =
         let rec explore n =
             if n >= q.size then None
