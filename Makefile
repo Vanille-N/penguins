@@ -1,12 +1,12 @@
-OCAMLC = ocamlopt -noassert -unsafe
+OCAMLC = ocamlopt -g -I src -unsafe
 
-ALL_SRC=$(wildcard *.ml)
-TEST_SRC=$(wildcard *test*)
-PERF_SRC=$(wildcard *perf*)
+ALL_SRC=$(wildcard src/*.ml)
+TEST_SRC=$(wildcard src/*test*)
+PERF_SRC=$(wildcard src/*perf*)
 EXEC_SRC=$(filter-out $(TEST_SRC) $(PERF_SRC), $(ALL_SRC))
 EXEC=$(shell ocamldep -sort $(EXEC_SRC))
-TEST=$(shell ocamldep -sort $(filter-out main.ml $(PERF_SRC), $(ALL_SRC)))
-PERF=$(shell ocamldep -sort $(filter-out main.ml $(TEST_SRC), $(ALL_SRC)))
+TEST=$(shell ocamldep -sort $(filter-out src/main.ml $(PERF_SRC), $(ALL_SRC)))
+PERF=$(shell ocamldep -sort $(filter-out src/main.ml $(TEST_SRC), $(ALL_SRC)))
 EXEC_MOD=$(EXEC:.ml=.cmx)
 TEST_MOD=$(TEST:.ml=.cmx)
 PERF_MOD=$(PERF:.ml=.cmx)
@@ -28,11 +28,13 @@ perf: $(PERF_MOD)
 	./perf
 
 report:
-	pdflatex --interaction=nonstopmode --halt-on-error README.tex
+	cd tex ; \
+	pdflatex --interaction=nonstopmode --halt-on-error README.tex ; \
+	mv README.pdf ..
 
-SOURCES = $(wildcard *.ml) $(wildcard *mli)
-.depend: $(SOURCES)
-	ocamldep $(SOURCES) > .depend
+SOURCES = $(wildcard src/*.ml) $(wildcard src/*.mli)
+.depend: Makefile $(SOURCES)
+	ocamldep -native -I src $(SOURCES) > .depend
 -include .depend
 
 %.cmx: %.ml Makefile
@@ -41,9 +43,10 @@ SOURCES = $(wildcard *.ml) $(wildcard *mli)
 	$(OCAMLC) -c $<
 
 clean:
-	rm -f pingouin perf prof test
-	rm -f *.cmx *.cmo *.cmi *.o *.out
+	rm -f pingouin perf test
+	rm -f src/*.cmx src/*.cmo src/*.cmi src/*.o src/*.out
 	rm -f perf.data* *.dump
+	rm texput.log tex/*.aux tex/*.log
 
 .PHONY: test clean perf
 
