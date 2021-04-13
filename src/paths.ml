@@ -15,7 +15,7 @@ let rec all fn = function
     | _ :: tl -> all fn tl
 
 module Make (M:S) = struct
-    (* positions represented by the standard (i,j) <-> i*jmax + j bijection *)
+    (* positions represented by the canonical (i,j) <-> i*jmax+j bijection *)
     module Pos : (Bitset.FIN with type t = Hex.pos) = struct
         type t = Hex.pos
         let height = Array.length M.grid
@@ -27,6 +27,7 @@ module Make (M:S) = struct
     end
     module HSet = Bitset.Make(Pos)
 
+    (* Pretty-printing util *)
     let print_up ?n:(n=Array.length M.grid + 5) () =
         if !Cfg.ansi_fmt then Format.printf "\x1b[%dA" n
 
@@ -34,6 +35,7 @@ module Make (M:S) = struct
         if !Cfg.ansi_fmt then Format.printf "\x1b[%dB" n
 
     let show_path translator fmt ps =
+        (* convert to printable characters *)
         let gr = Array.mapi (fun i line ->
             Array.mapi (fun j b ->
                 translator (i,j) b
@@ -54,6 +56,7 @@ module Make (M:S) = struct
                 in (hd, symb) :: (zipsymb next tl)
             )
         in
+        (* write chars that represent path *)
         let successive = zipsymb (int_of_char 'a') ps in
         List.iter (fun (pos, symb) ->
             gr.(fst pos).(snd pos) <- symb
@@ -90,7 +93,7 @@ module Make (M:S) = struct
         |> List.map (fun d -> (d, 1))
 
     let extremal_moves set pos =
-        (* moves of the form (_,1) or (_,n) if (_,n+1) is not allowed *)
+        (* moves of the form (_,1) or (_,n) when (_,n+1) is not allowed *)
         let rec max_reach (start:Hex.move) (prev:Hex.move) (dir:Hex.dir) (n:int) =
             let mv = (dir, n) in
             let p = Hex.(move_n pos mv) in
@@ -114,18 +117,7 @@ module Make (M:S) = struct
 
 
     let accessible set elt =
-        (* a simple DFS on the set *)
-        let rec explore seen = function
-            | [] -> seen |> Cfg.(passthrough ~b:!debug (fun x -> Format.printf "%d accessible from (%d,%d)\n" (HSet.cardinal x) (fst elt) (snd elt)))
-            | pos :: rest when not HSet.(member seen pos) ->
-                let adj =
-                    neighbors set pos
-                    |> Cfg.(inspect ~b:!debug (fun (i,j) -> Format.printf ">>> (%d,%d)\n" i j)) 
-                    |> List.filter (fun pos -> not (HSet.member seen pos)) (* remove those already explored *)
-                in
-                explore HSet.(add seen pos) (adj @ rest)
-            | _ :: rest -> explore seen rest
-        in explore HSet.empty [elt]
+        HSet.transitive_closure elt (neighbors set)
 
     let connected_trivial set elt =
         (* If the set is obviously connected, no need to recalculate ccs *)
@@ -167,7 +159,7 @@ module Make (M:S) = struct
     (* (reachable, length, dist):
      * - those with the less wasted space,
      * - then those whose computation is most advanced,
-     * - then those with fewer travel distance *)
+     * - then those with less travel distance *)
     type value = HSet.t * Hex.pos * Hex.move list (* (not_sunk, current_pos, path) *)
 
     module Keys : (Priority.ORDERED with type t = key) = struct
