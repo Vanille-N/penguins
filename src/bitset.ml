@@ -141,8 +141,8 @@ module Make (F : FIN) : SET with type elt = F.t = struct
             | pos :: rest when not (member_bit seen pos) ->
                 add_bit_mut seen pos; 
                 let adj = near (F.of_int pos)
-                    |> List.filter (fun p -> not (member seen p))
                     |> List.map F.to_int
+                    |> List.filter (fun p -> not (member_bit seen p))
                 in
                 explore (adj @ rest)
             | _ :: rest -> explore rest

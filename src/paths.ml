@@ -224,9 +224,12 @@ module Make (M:S) = struct
         in
         let (precalculated: (Hex.pos * HSet.t, best) Hashtbl.t) = Hashtbl.create 100 in
         if not !Cfg.quiet then List.iter (fun (p,s) -> show_path (translator ice_full s) Format.std_formatter []) board_splits;
+        (* 1_000_000 is a deliberately fixed size: requiring a bigger priority queue is a sign that
+         * some useless configurations are not being properly trimmed *)
+        let pq = PQ.create 1000000 (0,0,0) (HSet.empty, (0,0), []) in
         let bestpath best ice_init start allowed_moves =
             HMap.reset ();
-            let pq = PQ.create 1000000 (0,0,0) (HSet.empty, (0,0), []) in
+            if PQ.size pq <> 0 then failwith "Queue was not properly emptied";
             ignore PQ.(insert pq (nb, 1, 0) (HSet.(remove ice_init start), start, []));
             while PQ.size pq > 0 do
                 flush stdout;

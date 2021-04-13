@@ -131,7 +131,7 @@ let arg_interprete kind flags =
         )
         | File -> (
             input := open_in flags;
-            read_from_file := false
+            read_from_file := true
         )
 
 (* Parse command line arguments *)
@@ -176,8 +176,10 @@ let () =
     parse ()
 
 (* Initialize grid and searcher *)
+let () =
+    print_string "Reading problem from stdin\n";
+    flush stdout
 let (start, grid) =
-    if not !read_from_file then Format.printf "Reading problem from stdin\n";
     Hex.from_channel !input
 
 module M : (Paths.S) = struct
