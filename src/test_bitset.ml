@@ -51,6 +51,13 @@ let main () = CSet.(
         assert (subset a b);
         assert (subset b a)
     );
+    test "interface is immutable" (fun () ->
+        let a = init alpha in
+        let _ = add a '0' in
+        assert (not (member a '0'));
+        let _ = remove a 'a' in
+        assert (member a 'a');
+    );
     test "add and remove are opposites" (fun () ->
         let a = init alpha in
         let b = add a '0' in
@@ -125,7 +132,7 @@ let main () = CSet.(
             assert (not (member !curr c));
             assert (cardinal !curr + 1 = cardinal prev);
         done
-    );
+    )
 )
 
 let () =

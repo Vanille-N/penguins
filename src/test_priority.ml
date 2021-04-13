@@ -63,16 +63,16 @@ let main () = PQueue.(
     );
     List.iter (fun n ->
         let arr = Array.init n (fun _ -> Random.int 200) in
-        let pq = create n 0 0 in
+        let tmp = create n 0 0 in
         Array.iter (fun x -> 
-            let _ = insert pq x x in ()
+            let _ = insert tmp x x in ()
         ) arr;
         Array.sort Ints.compare arr;
-        let extracted = Array.init n (fun _ -> value (extract_min pq)) in
+        let extracted = Array.init n (fun _ -> value (extract_min tmp)) in
         test (Format.sprintf "heapsort size %d" n) (fun () ->
             assert (arr = extracted)
         );
-    ) [0; 1; 2; 3; 4; 5; 10; 50; 100; 500; 1000];
+    ) [0; 1; 2; 3; 4; 5; 10; 50; 100; 500(*; 1000*)];
     test "simulate a stack" (fun () ->
         let nmax  = 100 in
         let stk = ref [] in
