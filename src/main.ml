@@ -177,8 +177,10 @@ let () =
 
 (* Initialize grid and searcher *)
 let () =
-    print_string "Reading problem from stdin\n";
-    flush stdout
+    if not !read_from_file then (
+        print_string "Reading problem from stdin\n";
+        flush stdout
+    )
 let (start, grid) =
     Hex.from_channel !input
 
@@ -194,6 +196,6 @@ let () =
     let path = Hex.path_of_moves start moves in
     (* Display *)
     if not !Config.quiet
-    then Path.pp_path Format.std_formatter path
-    else Format.printf "%d\n" (List.length path)
+    then Path.pp_path Format.std_formatter path;
+    Format.printf "%d\n" (List.length path)
 
