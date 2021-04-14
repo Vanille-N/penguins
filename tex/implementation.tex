@@ -46,3 +46,21 @@ my implementation.\\
 for some performance gain.\\
 
 
+\subsection{\ttt{Paths}}
+
+The finite type represents positions of \([0,\ttt{height}[ \times [0,\ttt{width}[\)
+with the canonical bijection to \([0, \ttt{height}\times\ttt{width}[\).\\
+
+\ttt{HMap} uses a static mutable \ttt{Hashtbl.t}, it is important to reset it before
+an exploration to properly record the positions that have actually been explored.\\
+
+Keys contain an upper bound on the final length of the path as well as its
+current length.\\
+Higher priority is given to configurations where the potential is greater, then
+those whose computation is the most advanced.\\
+
+A configuration \ttt{(remaining\_ice, current\_position)} is added to the list
+of already explored configurations when it is time for its children to be added
+to the priority queue.\\
+This allows proving that \ttt{decrease\_key} is not required and that whenever a
+position is marked as ``explored'' it is indeed unnecessary to consider it again.\\
