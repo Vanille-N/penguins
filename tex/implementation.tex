@@ -31,3 +31,18 @@ neighbor function and calculates the connected component of \ttt{start}.\\
 \ttt{compare} is useful to sort sets by increasing cardinal.
 
 
+\subsection{\ttt{Priority}}
+
+\ttt{'a node} was made with a mutable key so that \ttt{decrease\_key} does
+not invalidate the reference handed out during \ttt{insert}.\\
+\ttt{find} searches the location of the node in the queue to be used with
+\ttt{member} and \ttt{remove}. \ttt{find} does not unnecessarily explore
+the rest of the heap when it finds a key greater than the one being searched,
+but no effort has been invested into any further improvement of performance,
+since the two functions \ttt{remove} and \ttt{decrease\_key} are useless for
+my implementation.\\
+
+\ttt{sift} and \ttt{trinkle} perform rotations rather than two-element permutations
+for some performance gain.\\
+
+
