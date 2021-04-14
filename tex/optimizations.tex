@@ -1,1 +1,19 @@
 \section{Optimizations}
+\subsection{\ttt{1}, \ttt{X}}
+
+In many of the problems an optimal path, or at least a path close to the optimum,
+can be obtained by only using ``single'' moves (i.e. of the form \ttt{(d,1)}),
+or ``extremal'' moves (i.e. of the form either \ttt{(d,1)} or \ttt{(d,n)} when
+\ttt{(d,n+1)} is not allowed).\\
+
+It has been observed (see \ref{benchmarks}) that searching for an optimal
+solution with such a restriction of moves often improves performance.\\
+The added cost of exploring a whole tree of configurations is compensated
+by the fact that this tree smaller than the full tree of allowed moves
+enables removing many branches that are such terrible configurations
+that it is possible to do better even with more restrictions on allowed moves.\\
+
+This is implemented in two variants that can be enabled with the option flags
+\ttt{-o1} (``single'' moves) and \ttt{-oX} (``extremal'' moves), or even
+\ttt{-o1X} (both, with ``single'' first and ``extremal'' next).\\
+
