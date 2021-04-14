@@ -1,1 +1,15 @@
 \section{Implementation}
+
+
+\subsection{\ttt{Hex}}
+
+Directions were renamed to be more intuitive, and they were removed
+from the public interface to be accessible only through \ttt{all\_directions}
+and the utility functions \ttt{opposite} as well as \ttt{neighbors}.\\
+
+\ttt{read\_grid} was made to be robust : it is able to read problems even
+if they contain extra lines before \ttt{<problem>} or after \ttt{</problem},
+and it is able to adapt itself depending on the parity of the line which
+features indentation.
+
+
