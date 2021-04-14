@@ -38,3 +38,8 @@ x     x
 x     x
  x x x
 </problem>
+
+<test>
+expect = 76
+timeout = 1
+</test>

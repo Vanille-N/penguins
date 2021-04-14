@@ -14,3 +14,8 @@
        x     x
 
 </problem>
+
+<test>
+expect = 24
+timeout = 1
+</test>

@@ -6,3 +6,9 @@
   x x x x   y z
 
 </problem>
+
+<test>
+expect = 21
+timeout = 1
+</test>
+

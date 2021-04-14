@@ -9,3 +9,9 @@ x o x o x x o x o x o o x o x x o x o x x o x o x
    o o       o o       o o       o o       o o    
   x   x     x   x     x   x     x   x     x   x   
 </problem>
+
+<test>
+expect = 0
+timeout = 0.5
+allow_timeout = True
+</test>

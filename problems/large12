@@ -4,3 +4,8 @@ x # x x
  x x x x
         x x x x x x x x
 </problem>
+
+<test>
+expect = 19
+timeout = 2 
+</test>
