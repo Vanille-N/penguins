@@ -64,3 +64,24 @@ of already explored configurations when it is time for its children to be added
 to the priority queue.\\
 This allows proving that \ttt{decrease\_key} is not required and that whenever a
 position is marked as ``explored'' it is indeed unnecessary to consider it again.\\
+
+Assume \ttt{(ice, pos)} is explored and that it is encountered again.\\
+This means that two paths were found that lead to the same configuration.\\
+Since the first one was considered first in the priority queue it must have
+had higher potential at least up to the previous step. Since the configurations
+are now the same, one of the following must be true :
+(a) the two paths are not the same but have the same length,
+(b) the first path has greater length.\\
+If (a) is the case then the path cannot be strictly improved, and if (b) is the case
+then the new path is worse than the previous one.\\
+In both instances it is useless to calculate further.\\
+
+An alternate way of interpreting the priority makes this fact obvious : sorting
+keys by decreasing potential then by decreasing advancement makes the strategy to
+be ``explore the current path as long as it doesn't waste any space, switch
+to the next possible path as soon as going on with this path would require
+sacrificing part of the positions''.\\
+This fact explains the efficiency of the optimizations presented thereafter, of
+which some seem counterintuitive.\\
+
+
