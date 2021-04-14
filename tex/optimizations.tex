@@ -42,3 +42,63 @@ Procedure:
     for subsets) and delete all positions that are not part of the optimal path
 \end{itemize}~\\
 
+\ttt{large3} is a good example of how this optimization operates.\\
+Initial configuration:
+\begin{lstlisting}
+     * * *   * *       
+    * # * * *         
+   * * * *   *         
+    * * * *   *       
+     * * * *   * *     
+\end{lstlisting}
+
+There are three positions that create a split as described, marked here:
+\begin{lstlisting}
+     . . .   * .       
+    . . . . *         
+   . . . .   .         
+    . . . .   .       
+     . . . .   * .
+\end{lstlisting}
+
+Two of them have optimal paths that are trivial to calculate:
+\begin{lstlisting}
+     . . .   a b       
+    . . . . .         
+   . . . .   .         
+    . . . .   .       
+     . . . .   . .
+\end{lstlisting}
+and
+\begin{lstlisting}
+     . . .   . .       
+    . . . . .         
+   . . . .   .         
+    . . . .   .       
+     . . . .   a b
+\end{lstlisting}
+
+The third uses the memoized calculations from the other two to quickly compute
+the best path
+\begin{lstlisting}
+     . . .   * *       
+    . . . . a         
+   . . . .   b         
+    . . . .   c       
+     . . . .   d e
+\end{lstlisting}
+
+The two unused positions are deemed useless, and once they are removed
+the main algorithm will have no difficulty quickly computing a path
+for the remaining positions, once again reusing the memoized results.
+\begin{lstlisting}
+     e d c   . .
+    f a b s t
+   h g q r   u
+    i j p o   v
+     k l m n   w x
+\end{lstlisting}
+This last computation is efficient is major part because the optimal path
+is perfect once the useless positions are deleted.
+
+
