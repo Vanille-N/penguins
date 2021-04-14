@@ -13,3 +13,21 @@ and it is able to adapt itself depending on the parity of the line which
 features indentation.
 
 
+\subsection{\ttt{Bitset}}
+
+\ttt{Bitset.t} uses \ttt{Int64.t} as recommended, and makes use of
+bitwise operators for good performance.\\
+
+Internally it uses mutable objects to avoid unnecessary copies but it exposes
+an immutable public interface.\\
+
+Several utility functions were added to implement standard operations that benefit
+from not repeatedly converting from and to \ttt{int} and from avoiding creating
+copies.\\
+Those are \ttt{setminus}, \ttt{union}, \ttt{intersect} which are self-explanatory
+both in name and in implementation as well as the more complex
+\ttt{transitive\_closure} which takes a starting point and a \ttt{elt -> elt list}
+neighbor function and calculates the connected component of \ttt{start}.\\
+\ttt{compare} is useful to sort sets by increasing cardinal.
+
+
