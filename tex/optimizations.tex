@@ -1,4 +1,6 @@
 \section{Optimizations}
+
+
 \subsection{\ttt{1}, \ttt{X}}
 
 In many of the problems an optimal path, or at least a path close to the optimum,
@@ -16,4 +18,27 @@ that it is possible to do better even with more restrictions on allowed moves.\\
 This is implemented in two variants that can be enabled with the option flags
 \ttt{-o1} (``single'' moves) and \ttt{-oX} (``extremal'' moves), or even
 \ttt{-o1X} (both, with ``single'' first and ``extremal'' next).\\
+
+
+\subsection{\ttt{T}}
+
+The above optimization (and the algorithm as a whole) is particularly effective
+when the optimal path is perfect, i.e. goes through all positions, because
+as soon as a perfect path is found the whole exploration can be stopped.\\
+This leads to the purpose of this optimization : to trim positions that
+are useless to reach in order to make it easier to eliminate branches of the
+exploration tree.\\
+
+Procedure:
+\begin{itemize}
+    \item find all positions that create a one-way split, i.e. have a position
+    that satisfies the two following conditions: (a) it splits the board into
+    two or more zones, and (b) it is impossible to go from a zone to another
+    without stepping on the position.
+    \item for each of these positions, select the zone that does not
+    contain the starting point
+    \item order these zones by inclusion
+    \item calculate the best possible path for each zone (memoize the results
+    for subsets) and delete all positions that are not part of the optimal path
+\end{itemize}~\\
 
