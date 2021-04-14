@@ -71,18 +71,18 @@ module Make (M:S) = struct
         else ' '
 
     let all_moves set pos =
-        let rec max_reach acc dir n =
+        let rec max_reach pos acc dir n =
             (* how far can one reach in this direction *)
             let mv = (dir, n) in
-            let p = Hex.(move_n pos mv) in
+            let p = Hex.(move pos dir) in
             if HSet.(member set p)
-            then max_reach (mv :: acc) dir (n + 1)
+            then max_reach p (mv :: acc) dir (n + 1)
             else acc
         in
         Hex.all_directions
         |> List.fold_left ( (* repeat for all possible directions *)
             fun (acc:Hex.move list) (dir:Hex.dir) ->
-                max_reach acc dir 1
+                max_reach pos acc dir 1
         ) []
         |> Cfg.(inspect ~b:!debug (fun (d,n) -> Format.printf "-> %s x %d\n" Hex.(to_string d) n))
 
@@ -94,17 +94,17 @@ module Make (M:S) = struct
 
     let extremal_moves set pos =
         (* moves of the form (_,1) or (_,n) when (_,n+1) is not allowed *)
-        let rec max_reach (start:Hex.move) (prev:Hex.move) (dir:Hex.dir) (n:int) =
+        let rec max_reach pos start prev dir n =
             let mv = (dir, n) in
-            let p = Hex.(move_n pos mv) in
+            let p = Hex.(move pos dir) in
             if HSet.(member set p)
-            then max_reach start mv dir (n + 1)
+            then max_reach p start mv dir (n + 1)
             else if start = mv then []
             else if start = prev then [start]
             else [start; prev]
         in
         Hex.all_directions
-        |> List.map (fun d -> max_reach (d,1) (d,1) d 1)
+        |> List.map (fun d -> max_reach pos (d,1) (d,1) d 1)
         |> List.flatten
         |> Cfg.(inspect ~b:!debug (fun (d,n) -> Format.printf "-> %s x %d\n" Hex.(to_string d) n))
 
@@ -113,7 +113,6 @@ module Make (M:S) = struct
         Hex.all_directions
         |> List.map Hex.(move elt)
         |> List.filter HSet.(member set)
-        |> Cfg.(inspect ~b:!debug (fun (i,j) -> Format.printf "neighbor (%d,%d) of (%d,%d)\n" i j (fst elt) (snd elt)))
 
 
     let accessible set elt =
@@ -155,16 +154,15 @@ module Make (M:S) = struct
             |> Cfg.(inspect ~b:!debug (fun cc -> Format.printf "Cardinal %d\n" (HSet.cardinal cc)))
         )
 
-    type key = int * int * int
+    type key = int * int 
     (* (reachable, length, dist):
      * - those with the less wasted space,
-     * - then those whose computation is most advanced,
-     * - then those with less travel distance *)
+     * - then those whose computation is most advanced *)
     type value = HSet.t * Hex.pos * Hex.move list (* (not_sunk, current_pos, path) *)
 
     module Keys : (Priority.ORDERED with type t = key) = struct
         type t = key
-        let compare (r1,l1,d1) (r2,l2,d2) = compare (-r1,-l1,d1) (-r2,-l2,d2)
+        let compare (r1,l1) (r2,l2) = compare (-r1,-l1) (-r2,-l2)
     end
 
     module PQ = Priority.Make(Keys)
@@ -206,6 +204,7 @@ module Make (M:S) = struct
                 (p, cc_start, cc_rest)
             )
             |> List.filter (function
+                | (p, _, _) when p = start -> false
                 | (_, [_], [_;_]) -> true
                 | (p, [s], [r]) -> not (
                     let (neighbors:(Hex.pos * Hex.pos) list) = List.map (fun mv -> (Hex.move p mv, Hex.(move p (opposite mv)))) Hex.all_directions in
@@ -222,20 +221,22 @@ module Make (M:S) = struct
             |> List.sort (fun (_,cc) (_,cc') -> HSet.compare cc' cc) (* smallest first *)
         ) else []
         in
-        let (precalculated: (Hex.pos * HSet.t, best) Hashtbl.t) = Hashtbl.create 100 in
+        let (precalculated: (Hex.pos * HSet.t, best) Hashtbl.t) =
+            Hashtbl.create 100
+        in
         if not !Cfg.quiet then List.iter (fun (p,s) -> show_path (translator ice_full s) Format.std_formatter []) board_splits;
         (* 1_000_000 is a deliberately fixed size: requiring a bigger priority queue is a sign that
          * some useless configurations are not being properly trimmed *)
-        let pq = PQ.create 1000000 (0,0,0) (HSet.empty, (0,0), []) in
+        let pq = PQ.create 1000000 (0,0) (HSet.empty, (0,0), []) in
         let bestpath best ice_init start allowed_moves =
             HMap.reset ();
             if PQ.size pq <> 0 then failwith "Queue was not properly emptied";
-            ignore PQ.(insert pq (nb, 1, 0) (HSet.(remove ice_init start), start, []));
+            ignore PQ.(insert pq (nb, 1) (HSet.(remove ice_init start), start, []));
             while PQ.size pq > 0 do
                 flush stdout;
                 if !Cfg.display then Format.printf "===============\nPQ size: %d\n" (PQ.size pq);
                 let node = PQ.extract_min pq in
-                let (nb, len, dist) = PQ.key node in
+                let (nb, len) = PQ.key node in
                 let (ice, pos, path) = PQ.value node in
 
                 if len > best.len then (
@@ -251,8 +252,8 @@ module Make (M:S) = struct
                 if not !Cfg.debug && !Cfg.display then print_up ();
                 if !Cfg.trim && Hashtbl.mem precalculated (pos,ice) then (
                     let entry = Hashtbl.find precalculated (pos,ice) in
-                    if entry.len + len > best.len then (
-                        best.len <- entry.len + len;
+                    if entry.len + len - 1 > best.len then (
+                        best.len <- entry.len + len - 1; (* -1 is because the junction must not be counted twice *)
                         best.path <- entry.path @ path;
                     );
                 ) else if HMap.check (ice, pos) then (
@@ -261,7 +262,7 @@ module Make (M:S) = struct
                     |> List.map (fun mv -> 
                         let newpos = Hex.move_n pos mv in
                         (mv, List.map (fun x -> (
-                            (len + 1 + HSet.cardinal x, len + 1, dist + snd mv),
+                            (len + 1 + HSet.cardinal x, len + 1),
                             (x, newpos, mv::path)
                         )) (split ice newpos))
                     )
@@ -275,11 +276,11 @@ module Make (M:S) = struct
                     ))
                     |> List.flatten
                     |> Cfg.(inspect ~b:!debug (fun x -> (
-                        let ((nb, len, dist), (ice, pos, path)) = x in
+                        let ((nb, len), (ice, pos, path)) = x in
                         Format.printf "Visiting (%d,%d) [%d]\n" (fst pos) (snd pos) len
                     )))
                     |> List.filter (fun x -> ( (* remove those whose potential is less than a solution already found *)
-                        let ((nb,_,_), _) = x in
+                        let ((nb,_), _) = x in
                         nb > best.len
                     ))
                     |> Cfg.(inspect ~b:!debug (fun _ -> Format.printf "1 insertion\n"))
