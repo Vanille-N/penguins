@@ -7,3 +7,8 @@
      x
 
 </problem>
+
+<test>
+expect = 19
+timeout = 1
+</test>

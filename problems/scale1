@@ -5,3 +5,8 @@
    o     o     o     o     o     o   o   o
 
 </problem>
+
+<test>
+expect = 32
+timeout = 1
+</test>
