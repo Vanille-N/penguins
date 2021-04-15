@@ -1,13 +1,17 @@
 <problem>
 
-
-
-   x x x x x x
-  x x x x x x x
-         x x x
-# x x x x
-         x x x
-  x x x x x x x
-   x x x x x x
+               x x x x x x
+  x x x x x   x x x x x x x
+ x x x x x x         x x x
+x x x # x x x x x x x
+ x x x x x x         x x x
+  x x x x x   x x x x x x x
+               x x x x x x
 
 </problem>
+
+<test>
+expect = 49
+timeout = 1
+allow_timeout = ['', '1', 'X', '1X']
+</test>

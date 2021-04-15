@@ -9,3 +9,8 @@
              x     x  
             x       x
 </problem>
+
+<test>
+expect = 32
+timeout = 1
+</test>

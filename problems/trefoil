@@ -23,3 +23,9 @@
          * * *
 
 </problem>
+
+<test>
+expect = 97
+timeout = 1
+allow_timeout = ['', '1', 'X', '1X']
+</test>

@@ -18,3 +18,8 @@
 a b c
 
 </problem>
+
+<test>
+expect = 14
+timeout = 1
+</test>

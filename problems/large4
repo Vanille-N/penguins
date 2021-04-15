@@ -9,3 +9,9 @@
  x x x x x
 
 </problem>
+
+<test>
+expect = 34
+timeout = 5
+allow_timeout = ['', '1', 'X', '1X']
+</test>
