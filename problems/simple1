@@ -3,3 +3,8 @@
  x
 x
 </problem>
+
+<test>
+expect = 5
+timeout = 1
+</test>
