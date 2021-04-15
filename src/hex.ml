@@ -66,25 +66,25 @@ let to_string = function
     | SW -> "SW"
 
 let read_grid chan interprete =
-    let lines = ref [] in
-    (try
-        (* seek start *)
-        let line = ref "" in
-        while !line <> "<problem>" do line := input_line chan done;
-        (* read body *)
-        while !line <> "</problem>" do
-            line := input_line chan;
-            lines := !line :: !lines
-        done;
-        close_in chan
-    with End_of_file -> failwith "End of file before termination marker"
-    );
+    let lines = (
+        let rec get_lines acc =
+            match input_line chan with
+                | "</problem>" -> [] 
+                | line -> line :: (get_lines ())
+                | exception End_of_file -> failwith "End of file before termination marker"
+        and skip_lines () =
+            match input_line chan with
+                | "<problem>" -> get_lines ()
+                | exception End_of_file -> failwith "End of file before beginning marker"
+                | _ -> skip_lines ()
+        in
+        skip_lines ()
+    ) in
     (* determine size of problem *)
     let rec size (i, j) = function
         | [] -> (i, j)
         | line :: rest -> size (i + 1, max (String.length line / 2) j) rest
     in
-    let lines = List.rev (List.tl !lines) in (* remove ending + reorder *)
     let (imax, jmax) = size (0, 0) lines in
     let (imax, jmax) = (imax + 2, jmax + 3) in (* padding *)
     let gr = Array.init imax (fun _ -> Array.make jmax (interprete ' ')) in
