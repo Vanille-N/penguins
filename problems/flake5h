@@ -8,5 +8,5 @@
 
 <test>
 expect = 56
-timeout = 15
+timeout = 20
 </test>
