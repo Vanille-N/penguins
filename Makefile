@@ -35,8 +35,8 @@ report:
 doc: $(PERF_MOD) $(TEST_MOD) $(EXEC_MOD)
 	# module dependencies
 	cd src ; \
-	ocamldoc -dot -dot-include-all -dot-reduce *.ml
-	dot src/ocamldoc.out -Tpdf > deps.pdf
+	ocamldoc -dot -dot-include-all $(notdir $(EXEC))
+	dot src/ocamldoc.out -Tpdf > tex/exec-deps.pdf
 	# documentation
 	mkdir -p doc
 	cd src ; \

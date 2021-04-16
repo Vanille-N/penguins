@@ -66,32 +66,51 @@ module Make (F : FIN) : SET with type elt = F.t = struct
     
     (* these functions mutate the set
      * the interface however is immutable *)
+    let add_bit_mut_unchecked set (n,k) =
+        set.!{n} <- Int64.(logor set.!{n} k);
+        set.card <- set.card + 1
+
     let add_bit_mut set (n,k) =
         if not (member_bit set (n,k)) then (
-            set.!{n} <- Int64.(logor set.!{n} k);
-            set.card <- set.card + 1
+            add_bit_mut_unchecked set (n,k)
         )
+
+    let remove_bit_mut_unchecked set (n,k) =
+        set.!{n} <- Int64.(logand set.!{n} (lognot k));
+        set.card <- set.card - 1
+        
 
     let remove_bit_mut set (n,k) =
         if member_bit set (n,k) then (
-            set.!{n} <- Int64.(logand set.!{n} (lognot k));
-            set.card <- set.card - 1
+            remove_bit_mut_unchecked set (n,k)
         )
 
-    (* easy to express in terms of [member_bit],
-     * [add_bit_mut], [remove_bit_mut] respectively *)
-    let member t elem =
-        member_bit t (accessor (F.to_int elem))
+    (* would be easy to express in terms of [member_bit],
+     * [add_bit_mut], [remove_bit_mut] respectively,
+     * but let's use unchecked versions instead to have fewer
+     * copies *)
+    let member set elem =
+        member_bit set (accessor (F.to_int elem))
 
-    let add t elem =
-        let t = clone t in
-        add_bit_mut t (accessor (F.to_int elem));
-        t
+    let add set elem =
+        let acc = accessor (F.to_int elem) in
+        if member_bit set acc then (
+            set
+        ) else (
+            let set = clone set in
+            add_bit_mut_unchecked set acc;
+            set
+        )
 
-    let remove t elem =
-        let t = clone t in
-        remove_bit_mut t (accessor (F.to_int elem));
-        t
+    let remove set elem =
+        let acc = accessor (F.to_int elem) in
+        if member_bit set acc then (
+            let set = clone set in
+            remove_bit_mut_unchecked set acc;
+            set
+        ) else (
+            set
+        )
 
     (* faster than loop because checks 64 bits at a time
      * (also short-circuits) *)
