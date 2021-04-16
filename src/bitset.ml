@@ -61,22 +61,19 @@ module Make (F : FIN) : SET with type elt = F.t = struct
     (* functions that manipulate bits for internal use:
      * the exposed interface uses [F.t] but [int] has
      * better performance *)
-    let member_bit set i =
-        let (n, k) = accessor i in
+    let member_bit set (n,k) =
         not Int64.(equal (logand set.!{n} k) (of_int 0))
     
     (* these functions mutate the set
      * the interface however is immutable *)
-    let add_bit_mut set i =
-        let (n, k) = accessor i in
-        if not (member_bit set i) then (
+    let add_bit_mut set (n,k) =
+        if not (member_bit set (n,k)) then (
             set.!{n} <- Int64.(logor set.!{n} k);
             set.card <- set.card + 1
         )
 
-    let remove_bit_mut set i =
-        let (n, k) = accessor i in
-        if member_bit set i then (
+    let remove_bit_mut set (n,k) =
+        if member_bit set (n,k) then (
             set.!{n} <- Int64.(logand set.!{n} (lognot k));
             set.card <- set.card - 1
         )
@@ -84,16 +81,16 @@ module Make (F : FIN) : SET with type elt = F.t = struct
     (* easy to express in terms of [member_bit],
      * [add_bit_mut], [remove_bit_mut] respectively *)
     let member t elem =
-        member_bit t (F.to_int elem)
+        member_bit t (accessor (F.to_int elem))
 
     let add t elem =
         let t = clone t in
-        add_bit_mut t (F.to_int elem);
+        add_bit_mut t (accessor (F.to_int elem));
         t
 
     let remove t elem =
         let t = clone t in
-        remove_bit_mut t (F.to_int elem);
+        remove_bit_mut t (accessor (F.to_int elem));
         t
 
     (* faster than loop because checks 64 bits at a time
@@ -104,14 +101,18 @@ module Make (F : FIN) : SET with type elt = F.t = struct
             || ((Int64.(equal rt.!{i} (logor lt.!{i} rt.!{i}))) && (aux (i+1)))
         in aux 0
 
-    let foreach set (fn:int->unit) =
+    let foreach set (fn:(int*Int64.t)->unit) =
         for i = 0 to F.max-1 do
-            if member_bit set i then
-                fn i
+            let acc = accessor i in
+            if member_bit set acc then
+                fn acc
         done
 
     let iter set fn =
-        foreach set (fun i -> fn (F.of_int i))
+        for i = 0 to F.max-1 do
+            if member_bit set (accessor i) then
+                fn (F.of_int i)
+        done
 
     (* faster than loop because bypasses [to_int] and [of_int] conversions
      * also avoid copies *)
@@ -126,7 +127,7 @@ module Make (F : FIN) : SET with type elt = F.t = struct
         set
 
     let intersect set set' =
-        init (fun e -> let i = F.to_int e in member_bit set i && member_bit set' i)
+        init (fun e -> let i = F.to_int e in member_bit set (accessor i) && member_bit set' (accessor i))
 
     (* sort by increasing cardinal *)
     let compare s s' =
@@ -138,11 +139,11 @@ module Make (F : FIN) : SET with type elt = F.t = struct
         let seen = clone empty in
         let rec explore = function
             | [] -> seen
-            | pos :: rest when not (member_bit seen pos) ->
-                add_bit_mut seen pos; 
+            | pos :: rest when not (member_bit seen (accessor pos)) ->
+                add_bit_mut seen (accessor pos); 
                 let adj = near (F.of_int pos)
                     |> List.map F.to_int
-                    |> List.filter (fun p -> not (member_bit seen p))
+                    |> List.filter (fun p -> not (member_bit seen (accessor p)))
                 in
                 explore (adj @ rest)
             | _ :: rest -> explore rest
