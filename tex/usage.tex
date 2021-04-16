@@ -3,9 +3,19 @@
 \subsection{\ttt{make} targets}
 
 By default, \ttt{make} builds the \ttt{pingouin} executable.\\
-\ttt{make test} will run unit tests (see \ref{subsec-structure}) for all functions of
+\ttt{make test} will run unit tests for all functions of
 \ttt{Priority} and \ttt{Bitset} that are part of the original
-interface (see \ref{sec-additions} for more details).\\
+interface (see the documentation for more details).\\
+
+\ttt{make doc} and \ttt{make report} build the documentation and the
+\ttt{README.pdf} respectively.\\
+
+Some other tools are
+\begin{itemize}
+    \item \ttt{tester.py} which performs path length checks on all files in \ttt{problems/}
+    \item \ttt{bencher.py} to produce benchmarks
+    \item \ttt{reporter.py} to translate benchmark results to a formatted tabular
+\end{itemize}
 
 Note that source code has been moved to \ttt{src/}, the \ttt{Makefile} has
 been adapted in consequence.
@@ -23,7 +33,7 @@ Named argument take the form \ttt{-[CATEGORY][FLAGS]}\\
 where \ttt{CATEGORY} is one of \ttt{o} (optimizations), \ttt{d} (display),
 \ttt{h} (help).\\
 
-Example (see \ref{sec-optimizations} for details):\\
+Example (see the optimizations section for details):\\
 There are three optimizations available: \ttt{1}, \ttt{X}, \ttt{T}.\\
 Running \ttt{./pingouin -o1X file} will enable optimizations \ttt{1} and \ttt{X}
 but disable \ttt{T}.\\
