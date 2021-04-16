@@ -48,7 +48,11 @@ let report () =
                         s i j
                 | Failure s ->
                     Printf.printf
-                        "  Failure raised: \x1b[33m%s\x1b[0m\n" s
+                        "  Failure raised: \x1b[33m%s\x1b[0m\n"
+                        s
+                | exc -> Printf.printf
+                        "  Other exception: \x1b[33m%s\x1b[0m\n"
+                        (Printexc.to_string exc)
         )
     ) !failures;
     Format.printf "\n<%s{ END }%s>\n\n" (String.make 30 '=') (String.make 30 '=')
