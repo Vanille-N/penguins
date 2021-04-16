@@ -14,3 +14,40 @@ val perf : ?repeat:int -> string -> (unit -> unit) -> unit
 
 (** Summary of benchmarks *)
 val report : unit -> unit
+
+(** {2 Example usage} *)
+
+(** {[
+    Unit_bench.(
+         perf "iterative" (fun () ->
+            for i = 0 to 10000000 do
+                ()
+            done
+        );
+        perf ~repeat:20 "recursive" (fun () ->
+            let rec loop = function
+                | 0 -> ()
+                | n -> loop (n-1)
+            in loop 10000000 
+        );
+        report ()
+    )
+    ]}
+    
+    yields
+    
+    {[
+    <============================={ START }=============================>
+
+    perf::Loops
+      * iterative   ..................... 0.81540 (10 iter)
+      * recursive   ..................... 1.70818 (20 iter)
+
+        *-- Summary: 2 performance measurements --*
+
+    <=============================={ END }==============================>
+    ]}
+
+    *)
+
+
