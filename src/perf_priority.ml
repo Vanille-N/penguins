@@ -1,3 +1,5 @@
+(** Very rudimentary measures of performance for operations of {!Priority} *)
+
 module Ints : (Priority.ORDERED with type t = int) = struct
     type t = int
     let compare = compare

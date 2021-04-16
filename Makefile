@@ -32,6 +32,17 @@ report:
 	pdflatex --interaction=nonstopmode --halt-on-error README.tex ; \
 	mv README.pdf ..
 
+doc: $(PERF_MOD) $(TEST_MOD) $(EXEC_MOD)
+	# module dependencies
+	cd src ; \
+	ocamldoc -dot -dot-include-all -dot-reduce *.ml
+	dot src/ocamldoc.out -Tpdf > deps.pdf
+	# documentation
+	mkdir -p doc
+	cd src ; \
+	ocamldoc -html -d ../doc *.ml *.mli
+
+
 SOURCES = $(wildcard src/*.ml) $(wildcard src/*.mli)
 .depend: Makefile $(SOURCES)
 	ocamldep -native -I src $(SOURCES) > .depend
@@ -46,7 +57,8 @@ clean:
 	rm -f pingouin perf test
 	rm -f src/*.cmx src/*.cmo src/*.cmi src/*.o src/*.out
 	rm -f perf.data* *.dump
-	rm texput.log tex/*.aux tex/*.log
+	rm tex/*.aux tex/*.log
+	rm src/ocamldoc.out
 
 .PHONY: test clean perf
 

@@ -1,14 +1,19 @@
 (** Argument parsing, help messages, grid initialization *)
 
+(**/**)
 let input = ref stdin
 let read_from_file = ref false
+(**/**)
 
-(* Argument category *)
+(** Argument category *)
 type kind = Optimize | Display | Help | File
-(* Actual argument *)
+
+(** Actual argument *)
 type arg = End | Error of string | Arg of kind * string
 
-(* To be printed whenever any kind of help is provided
+(** {2 Help} *)
+
+(** To be printed whenever any kind of help is provided
  * (be it due to the [-h] flag or because arguments are incorrect) *)
 let print_help_general () =
     Format.printf "%s\n%s\n%s\n%s\n%s\n\n"
@@ -18,7 +23,7 @@ let print_help_general () =
         "       -d[Display-flags]"
         "       -h[Help-flags]"
 
-(* Detailed information, only when explicitly asked for *)
+(** Detailed information, only when explicitly asked for *)
 let print_help_extensive = function
     | Optimize -> Format.printf "%s\n%s\n%s\n%s\n\n%s\n\n"
         "Optimize:"
@@ -50,7 +55,7 @@ let print_help_extensive = function
         " foo  -> read problem from file [foo]"   
         "   DEFAULT: read from stdin"
 
-(* Quick reminder for invalid arguments *)
+(** Quick reminder for invalid arguments *)
 let print_help_minimal () =
     Format.printf "%s\n%s\n%s\n%s\n\n"
         "Optimize: -o[1XT] = -o1XT"
@@ -58,7 +63,9 @@ let print_help_minimal () =
         "Help: -h[HODF] = -hHODF"
         "File: [foo] = stdin"
 
-(* Parse each flag and set options in [Config] *)
+(** {2 Parsing} *)
+
+(** Parse each flag and set options in {!Config} *)
 let arg_interprete kind flags =
     match kind with
         | Optimize -> Config.(
@@ -191,10 +198,10 @@ end
 module Path = Paths.Make(M)
 
 let () =
-    (* Computation *)
+    (* computation *)
     let (len, moves) = Path.maxpath start in
     let path = Hex.path_of_moves start moves in
-    (* Display *)
+    (* display *)
     if not !Config.quiet
     then Path.pp_path Format.std_formatter path;
     Format.printf "%d\n" (List.length path)

@@ -1,3 +1,14 @@
+(** Unit tests for {!Bitset}
+
+    Only tests basic operations :
+    neither {!Bitset.SET.transitive_closure} nor {!Bitset.SET.union}, {!Bitset.SET.intersect}, {!Bitset.SET.setminus}
+    are verified. This is somewhat justified by their implementation being
+    less easy to verify and less prone to low-level mistakes.
+
+    Mostly {!Bitset.SET.empty}, {!Bitset.SET.add}, {!Bitset.SET.remove} are verified since they are both
+    prone to edge case mistakes and central to everything else. {!Bitset.SET.subset}
+    is presumed correct *)
+
 module Chars : (Bitset.FIN with type t = char) = struct
     type t = char
     let max = 256

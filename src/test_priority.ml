@@ -1,3 +1,9 @@
+(** Unit tests for {!Priority}
+
+    Some randomized tests are included to allow
+    for large quantities of data. {!Priority.Make.member}, {!Priority.Make.decrease_key},
+    {!Priority.Make.remove} are tested despite not being useful. *)
+
 module Ints : (Priority.ORDERED with type t = int) = struct
     type t = int
     let compare a b =
