@@ -3,11 +3,11 @@
 type pos = int * int
 type 'a grid = 'a array array
 
-(** Directions *)
+(** {2 Directions} *)
 
 type dir
 
-(** List of all possible directions *)
+(** List of all (6) possible directions *)
 val all_directions : dir list
 
 (** Gives all (2) directions that are considered adjacent *)
@@ -16,18 +16,18 @@ val neighbors : dir -> dir list
 (** Gives the direction considered opposite *)
 val opposite : dir -> dir
 
-(** Movements *)
+(** {2 Movements} *)
 
 type move = dir * int
 val move : pos -> dir -> pos
 val move_n : pos -> move -> pos
 
-(** [path_of_moves p moves] is the list of positions
- * obtained by iterating [move] on [moves] starting
- * from [p] *)
+(** List of positions obtained by iterating
+    {!move} on the list of moves starting
+    from the initial position *)
 val path_of_moves : pos -> move list -> pos list
 
-(** I/O *)
+(** {2 I/O} *)
 
 (* util *)
 val to_string : dir -> string
@@ -36,6 +36,7 @@ val to_string : dir -> string
 val pp_grid : Format.formatter -> char grid -> unit
 
 (** Read (and pad with empty positions) a grid
- * from an input channel *)
+    from an input channel *)
+
 val from_channel : in_channel -> pos * bool grid
 val show_problem : in_channel -> pos * char grid

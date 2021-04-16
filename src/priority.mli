@@ -1,51 +1,51 @@
+(** A min-heap-based priority queue *)
+
+(** Type of keys *)
 module type ORDERED = sig
-  type t
-  val compare : t -> t -> int
+    type t
+    val compare : t -> t -> int
 end
 
+(** Priority queue implementation *)
 module Make (M:ORDERED) : sig
 
-  (** File de priorité dont les priorités sont dans [M.t]
-    * et qui contient des données de type ['a]. *)
-  type 'a queue
+    (** Priority queue with keys in {!M.t} and values in ['a] *)
+    type 'a queue
 
-  (** Noeud dans la file (ou pas) *)
-  type 'a node
+    (** Node of the queue (possibly deleted since) *)
+    type 'a node
 
-  (** [create max_size dummy_key dummy_value] crée une nouvelle
-    * file pouvant contenir au plus [max_size] éléments.
-    * Les [dummy_*] pourront être utilisés pour initialiser
-    * la file. *)
-  val create : int -> M.t -> 'a -> 'a queue
+    (** {2 Standard queue operations} *) 
 
-  (** Nombre d'entrées enfilés *)
-  val size : 'a queue -> int
+    (** [create max_size dummy_key dummy_value] build a new 
+      * priority queue with capacity [max_size]. *)
+    val create : int -> M.t -> 'a -> 'a queue
 
-  (** [insert queue key value] insère une nouvelle entrée,
-    * et renvoie la noeud associé. *)
-  val insert : 'a queue -> M.t -> 'a -> 'a node
+    (** Current number of nodes in the queue *)
+    val size : 'a queue -> int
 
-  (** Extraction du minimum d'une queue.
-    * On peut supposer la queue non vide.
-    * Le noeud renvoyé est déja supprimé de la queue. *)
-  val extract_min : 'a queue -> 'a node
+    (** Create a node, insert it into the queue, and return it for future access *)
+    val insert : 'a queue -> M.t -> 'a -> 'a node
 
-  (** Clé et valeur associés à un noeud *)
+    (** Extract and remove the node with smallest key
 
-  val key : 'a node -> M.t
-  val value : 'a node -> 'a
+        Fails if queue is empty *)
+    val extract_min : 'a queue -> 'a node
 
-  (** Suppression d'un noeud dans la queue.
-    * On pourra supposer que le noeud est initialement
-    * présent dans la queue. *)
-  val remove : 'a queue -> 'a node -> unit
+    (** {2 Node manipulation} *)
 
-  (** Indique si un noeud est présent dans la queue *)
-  val member : 'a queue -> 'a node -> bool
+    val key : 'a node -> M.t
+    val value : 'a node -> 'a
 
-  (** Décrément de la clé associée à un noeud.
-    * Si le noeud n'est pas (plus) présent dans la queue,
-    * alors il y est (r)ajouté avec la nouvelle clé. *)
-  val decrease_key : 'a queue -> 'a node -> M.t -> unit
+    (** Remove an element from the queue before
+        its scheduled priority *)
+    val remove : 'a queue -> 'a node -> unit
+
+    (** Search presence of a node in the queue *)
+    val member : 'a queue -> 'a node -> bool
+
+    (** Increase the priority of a node, insert it into
+        the queue if it does not already exist *)
+    val decrease_key : 'a queue -> 'a node -> M.t -> unit
 
 end
