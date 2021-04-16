@@ -87,7 +87,7 @@ let read_grid chan interprete =
     in
     let (imax, jmax) = size (0, 0) lines in
     let (imax, jmax) = (imax + 2, jmax + 3) in (* padding *)
-    let gr = Array.init imax (fun _ -> Array.make jmax (interprete ' ')) in
+    let gr = Array.make_matrix imax jmax (interprete ' ') in
     (* determine starting point and hex offset *)
     let (start, offset) = (
         let find_start line = String.index_from_opt line 0 '#' in

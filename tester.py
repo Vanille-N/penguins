@@ -74,7 +74,7 @@ def verify(file):
 
 
 def main():
-    files = sorted(os.listdir(path), reverse=True)
+    files = sorted(os.listdir(path))
     for f in files:
         verify(f)
 
