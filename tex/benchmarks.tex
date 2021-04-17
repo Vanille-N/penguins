@@ -1,5 +1,18 @@
 \section{Benchmarks}
 
- \begin{center}\label{bench-results}
- \input{bench-results}
- \end{center}
+\begin{center}\label{bench-results}
+\input{bench-results}
+\end{center}
+
+The first takeaway is that none of the optimizations are useless :
+\ttt{1} yields a small but noticeable improvement in performance on
+\ttt{flake5h}, \ttt{scale4}, \ttt{scale5}, \ttt{large1}, \ttt{large2}, \ttt{trefoil};
+\ttt{X} is useful in the same way for \ttt{scale2}, \ttt{scale3}, \ttt{flake4hv}.\\
+Finally, \ttt{T} provides quite spectacular improvements for \ttt{branches},
+\ttt{large4}, \ttt{trefoil}, \ttt{trimtriple} and slightly less so for \ttt{large3}.
+Only in the pathological case \ttt{display} does \ttt{T} hinder performance.\\
+
+Overall, these benchmarks quite unambiguously suggest choosing \ttt{-o1XT} for best
+(and most consistent) results, which happens to be the default when \ttt{-o} is not
+specified.\\
+

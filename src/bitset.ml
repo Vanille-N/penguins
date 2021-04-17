@@ -37,12 +37,11 @@ module Make (F : FIN) : SET with type elt = F.t = struct
     (* accessor functions *)
     let ( .!{} ) s k = s.contents.(k)
     let ( .!{}<- ) s k v = s.contents.(k) <- v
-    let one = Int64.of_int 1
-    let accessor i = (i / 64, Int64.(shift_left one (i mod 64)))
+    let accessor i = (i / 64, Int64.(shift_left Int64.one (i mod 64)))
     let size = fst (accessor F.max) + 1
 
     (* easy + util *)
-    let empty = { card=0; contents=Array.make size (Int64.of_int 0); } 
+    let empty = { card=0; contents=Array.make size Int64.zero; } 
     let cardinal set = set.card
     let clone set = { card=set.card; contents=Array.copy set.contents; }
 
@@ -62,7 +61,7 @@ module Make (F : FIN) : SET with type elt = F.t = struct
      * the exposed interface uses [F.t] but [int] has
      * better performance *)
     let member_bit set (n,k) =
-        not Int64.(equal (logand set.!{n} k) (of_int 0))
+        not Int64.(equal (logand set.!{n} k) Int64.zero)
     
     (* these functions mutate the set
      * the interface however is immutable *)
