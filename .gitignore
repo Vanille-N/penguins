@@ -11,11 +11,13 @@
 *.bak*
 perf.data*
 
+
 # Binaries
 pingouin
 test
 perf
 prof
+doc/
 
 
 bench-results.txt

@@ -43,5 +43,5 @@ with open("tex/bench-results.tex", 'w') as f:
         f.write(''.join(" & \\texttt{{{}}}".format(fmt_data("problems/"+file, fl)) for fl in flag_combs))
         f.write("\\\\\n")
     f.write("\\hline\n")
-    f.write("\\end{tabular}i\n~\\\n")
+    f.write("\\end{tabular}\n~\\\n")
 

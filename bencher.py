@@ -23,6 +23,15 @@ def sample_file_opt(file, optflags):
 def measure_file_opt(file, optflags):
     times = []
     n = 5
+    t = sample_file_opt(file, optflags)
+    if t > 30:
+        print("Aborted")
+        return 35
+    elif t < 0.1:
+        n = 50
+    elif t < 1:
+        n = 20
+    times.append(t)
     for i in range(n):
         t = sample_file_opt(file, optflags)
         if t > 30:
