@@ -8,8 +8,8 @@ val debug : bool ref
 (** Should print the current state of the grid at each step *)
 val display : bool ref
 
-(** Allow special formatting characters *)
-val ansi_fmt : bool ref
+(** Should print major steps of the algorithm *)
+val show_steps : bool ref
 
 (** Print nothing *)
 val quiet : bool ref

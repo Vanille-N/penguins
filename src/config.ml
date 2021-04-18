@@ -1,7 +1,7 @@
 let debug = ref false
 let display = ref true
-let ansi_fmt = ref true
 let quiet = ref false
+let show_steps = ref true
 
 let first_pass = ref true
 let extremal_pass = ref true

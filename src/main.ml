@@ -31,17 +31,15 @@ let print_help_extensive = function
         "  X  -> restrict moves to direct neighbors or furthest away"
         "  T  -> recursively trim positions than can be eliminated"
         "   DEFAULT: -o1XT"
-    | Display -> Format.printf "%s\n%s\n%s\n%s\n%s\n\n%s\n%s\n%s\n%s\n\n%s\n\n"
+    | Display -> Format.printf "%s\n%s\n%s\n%s\n%s\n\n%s\n%s\n\n%s\n\n"
         "Display:"
-        "  D  -> display current progress of search"
-        "  G  -> print extensive debug information"
-        "  A  -> use ANSI escape sequences for better display"
-        "  Q  -> quiet, do not print anything"
-        "   NOTE: [A] is disabled if [G] is active"
+        "  M  -> display major steps of the algorithm"
+        "  D  -> display steps of search"
+        "  G  -> print debug information"
+        "  Q  -> quiet, only print final answer"
         "   NOTE: all are useless if [Q] is active"
-        "   NOTE: [D],[G],[A] all carry a performance penalty"
-        "   NOTE: if [Q] is active, the answer is the return code minus 100"
-        "   DEFAULT: -dDA"
+        "   NOTE: [D],[G],[M] all carry a performance penalty"
+        "   DEFAULT: -dDM"
     | Help -> Format.printf "%s\n%s\n%s\n%s\n%s\n\n%s\n\n"
         "Help:"
         "  H  -> print help about Help (this)"
@@ -59,7 +57,7 @@ let print_help_extensive = function
 let print_help_minimal () =
     Format.printf "%s\n%s\n%s\n%s\n\n"
         "Optimize: -o[1XT] = -o1XT"
-        "Display: -d[DGAQ] = -dDA"
+        "Display: -d[DGQM] = -dDM"
         "Help: -h[HODF] = -hHODF"
         "File: [foo] = stdin"
 
@@ -88,13 +86,13 @@ let arg_interprete kind flags =
         | Display -> Config.(
             debug := false;
             display := false;
-            ansi_fmt := false;
             quiet := false;
+            show_steps := false;
             String.iter (function
                 | 'D' -> display := true
                 | 'G' -> debug := true
-                | 'A' -> ansi_fmt := true
                 | 'Q' -> quiet := true
+                | 'M' -> show_steps := true
                 | c -> (
                     Format.printf "'%c' is invalid for kind Display\n\n" c;
                     print_help_general ();
@@ -103,12 +101,13 @@ let arg_interprete kind flags =
                     exit 1
                 )
             ) flags;
-            if !debug then ansi_fmt := false;
             if !quiet then (
-                ansi_fmt := false;
+                debug := false;
                 display := false;
-                ansi_fmt := false
-            )
+                show_steps := false
+            );
+            if !debug then display := true;
+            if !display then show_steps := true
         )
         | Help -> (
             let none = ref true in
@@ -143,7 +142,15 @@ let arg_interprete kind flags =
 
 (* Parse command line arguments *)
 let () =
-    let next = (
+    let next = ( (* yields arguments partially parsed one after another *)
+        (* "" -> Error
+           () -> End
+           "-" -> Error
+           "-oXYZ" -> Arg(Optimize, "XYZ")
+           "-hXYZ" -> Arg(Help, "XYZ")
+           "-dXYZ" -> Arg(Display, "XYZ")
+           "FOO" -> Arg(File, "FOO")
+           *)
         let i = ref 1 in
         let len = Array.length Sys.argv in
         let next () =
@@ -154,7 +161,7 @@ let () =
                 let n = String.length arg in
                 if n = 0 then Error "Zero-length argument is invalid"
                 else if arg.[0] <> '-' then Arg (File, arg)
-                else if n = 1 then failwith "'-' is not a valid argument"
+                else if n = 1 then Error "'-' is not a valid argument"
                 else (
                     let rest = String.sub arg 2 (n-2) in
                     match arg.[1] with

@@ -4,7 +4,7 @@ type 'a grid = 'a array array
 type dir = E | NE | SE | W | NW | SW
 let all_directions = E :: NE :: SE :: W :: NW :: SW :: []
 
-(* convert move (+line) to difference of positions *)
+(* convert move (+ line to check parity) to difference of positions *)
 let move_delta i = function
   | E -> (0, 1)
   | W -> (0, -1)
@@ -66,13 +66,16 @@ let to_string = function
     | SW -> "SW"
 
 let read_grid chan interprete =
+    (* interprete tells how to read each character
+       typically [let interprete = fun c -> c <> ' ']
+       *)
     let lines = (
-        let rec get_lines acc =
+        let rec get_lines acc = (* read until termination marker *)
             match input_line chan with
                 | "</problem>" -> [] 
                 | line -> line :: (get_lines ())
                 | exception End_of_file -> failwith "End of file before termination marker"
-        and skip_lines () =
+        and skip_lines () = (* skip until beginning marker *)
             match input_line chan with
                 | "<problem>" -> get_lines ()
                 | exception End_of_file -> failwith "End of file before beginning marker"
@@ -98,6 +101,7 @@ let read_grid chan interprete =
                 | Some j -> ((i, j), (i + j) mod 2)
         in aux 0 lines
     ) in
+    (* actual parsing, now that offset has been determined *)
     List.iteri (fun i line -> (
         String.iteri (fun j c -> (
             if (i + j + offset) mod 2 == 1 then (
@@ -116,6 +120,7 @@ let read_grid chan interprete =
             )
         )) line
     )) lines;
+    (* insert the grid with the padding *)
     let start = (
         let (i, j) = start in
         let actual_i = i + 1 in

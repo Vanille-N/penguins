@@ -1,3 +1,4 @@
+(* copy signatures from mli *)
 module type FIN = sig
     type t
     val max : int
@@ -29,7 +30,7 @@ end
 
 module Make (F : FIN) : SET with type elt = F.t = struct
     type t = {
-        mutable card: int;
+        mutable card: int; (* needs to be mutable in-place for *_mut_* operations *)
         contents: Int64.t array;
     }
     type elt = F.t
@@ -50,6 +51,7 @@ module Make (F : FIN) : SET with type elt = F.t = struct
         let set = clone empty in
         for i = 0 to F.max-1 do
             if indic (F.of_int i) then (
+                (* add to set (in-place) *)
                 set.card <- set.card + 1;
                 let (n, k) = accessor i in
                 set.!{n} <- Int64.(logor set.!{n} k)
@@ -58,8 +60,8 @@ module Make (F : FIN) : SET with type elt = F.t = struct
         set
 
     (* functions that manipulate bits for internal use:
-     * the exposed interface uses [F.t] but [int] has
-     * better performance *)
+     * the exposed interface uses [F.t] but [(int*int)] has
+     * better performance because fewer conversions *)
     let member_bit set (n,k) =
         not Int64.(equal (logand set.!{n} k) Int64.zero)
     
@@ -76,8 +78,7 @@ module Make (F : FIN) : SET with type elt = F.t = struct
 
     let remove_bit_mut_unchecked set (n,k) =
         set.!{n} <- Int64.(logand set.!{n} (lognot k));
-        set.card <- set.card - 1
-        
+        set.card <- set.card - 1 
 
     let remove_bit_mut set (n,k) =
         if member_bit set (n,k) then (
@@ -94,8 +95,9 @@ module Make (F : FIN) : SET with type elt = F.t = struct
     let add set elem =
         let acc = accessor (F.to_int elem) in
         if member_bit set acc then (
-            set
+            set (* no-op *)
         ) else (
+            (* modify a copy *)
             let set = clone set in
             add_bit_mut_unchecked set acc;
             set
@@ -104,14 +106,15 @@ module Make (F : FIN) : SET with type elt = F.t = struct
     let remove set elem =
         let acc = accessor (F.to_int elem) in
         if member_bit set acc then (
+            (* modify a copy *)
             let set = clone set in
             remove_bit_mut_unchecked set acc;
             set
         ) else (
-            set
+            set (* no-op *)
         )
 
-    (* faster than loop because checks 64 bits at a time
+    (* faster than loop over 0..max because checks 64 bits at a time
      * (also short-circuits) *)
     let subset lt rt =
         let rec aux i =
@@ -153,7 +156,7 @@ module Make (F : FIN) : SET with type elt = F.t = struct
 
     (* DFS exploration *)
     let transitive_closure start near =
-        (* use mutability for performance reasons *)
+        (* use mutability for performance *)
         let seen = clone empty in
         let rec explore = function
             | [] -> seen
