@@ -17,6 +17,6 @@ x x           x     x x       x           x x
 
 <test>
 expect = 45
-timeout = 2
+timeout = 4
 allow_timeout = ['', '1', 'X', '1X']
 </test>
