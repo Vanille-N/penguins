@@ -143,6 +143,13 @@ let main () = CSet.(
             assert (not (member !curr c));
             assert (cardinal !curr + 1 = cardinal prev);
         done
+    );
+    test "collect" (fun () ->
+        assert (collect (init numeric) = List.init 10 (fun i -> char_of_int (i + int_of_char '0')));
+        assert (collect (init alpha) = (
+            List.init 26 (fun i -> char_of_int (i + int_of_char 'A'))
+            @ List.init 26 (fun i -> char_of_int (i + int_of_char 'a'))
+        ));
     )
 )
 

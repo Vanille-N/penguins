@@ -45,17 +45,22 @@ module type SET = sig
   (** Test belonging to set *)
   val member : t -> elt -> bool
 
-  (** Check if first set is subset of the second *)
-  val subset : t -> t -> bool
+  (** {2 Collection manipulation} *)
 
   (** Iterate function on all elements of the set *)
   val iter : t -> (elt -> unit) -> unit
+
+  (** List of all elements *)
+  val collect : t -> elt list
     
   (** {2 Standard set operations} *)
 
   val setminus : t -> t -> t
   val union : t -> t -> t
   val intersect : t -> t -> t
+ 
+  (** Check if first set is subset of the second *)
+  val subset : t -> t -> bool
 
   (** {2 Miscellaneous} *)
 

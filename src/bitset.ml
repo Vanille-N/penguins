@@ -135,6 +135,21 @@ module Make (F : FIN) : SET with type elt = F.t = struct
                 fn (F.of_int i)
         done
 
+    let collect set =
+        let rec aux acc = function
+            | (-1,_) -> acc
+            | (n,k) -> (
+                let rest acc =
+                    if k = 0
+                    then aux acc (n-1, 63)
+                    else aux acc (n, k-1)
+                in
+                if member_bit set (n, Int64.(shift_left one k))
+                then rest (F.of_int (n * 64 + k) :: acc)
+                else rest acc
+            )
+        in aux [] (F.max / 64, F.max mod 64)
+
     (* faster than loop because bypasses [to_int] and [of_int] conversions
      * also avoid copies *)
     let setminus set set' =
