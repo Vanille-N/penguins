@@ -12,6 +12,17 @@ TEST_MOD=$(TEST:.ml=.cmx)
 PERF_MOD=$(PERF:.ml=.cmx)
 
 default: $(EXEC_MOD) pingouin
+	# Other targets:
+	#   make test     -> run unit tests for Bitset and Priority
+	#   make perf     -> run unit perfs for Bitset and Priority
+	#   make doc      -> build documentation
+	#   make report   -> build README
+	#   make tar      -> compress project into archive
+	#   make clean    -> remove build artifacts
+	# Misc:
+	#   python3 bencher.py problems/*   -> measure performance on real inputs
+	#   python3 reporter.py             -> translate benchmarks to readable format
+	#   python3 tester.py               -> run tests on real inputs
 
 pingouin: $(EXEC_MOD)
 	$(OCAMLC) $(EXEC_MOD) -o pingouin
@@ -27,6 +38,7 @@ perf: $(PERF_MOD)
 report: doc
 	python3 reporter.py
 	cd tex ; \
+	pdflatex --interaction=nonstopmode --halt-on-error README.tex ; \
 	pdflatex --interaction=nonstopmode --halt-on-error README.tex ; \
 	mv README.pdf ..
 
@@ -65,7 +77,7 @@ clean:
 	rm -f pingouin perf test
 	rm -f src/*.cmx src/*.cmo src/*.cmi src/*.o src/*.out
 	rm -f perf.data* *.dump
-	rm -f tex/*.aux tex/*.log
+	rm -f tex/*.aux tex/*.log tex/*.toc
 	rm -f src/ocamldoc.out
 	rm -f tex/exec-deps.pdf
 	rm -rf doc
