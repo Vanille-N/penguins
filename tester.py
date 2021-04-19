@@ -1,3 +1,6 @@
+# Usage:
+# python3 tester.py
+
 import os
 import subprocess as sp
 import sys

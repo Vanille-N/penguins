@@ -1,3 +1,6 @@
+# Usage:
+# python3 bencher.py problems/*
+
 import time as t
 import os
 import subprocess as sp

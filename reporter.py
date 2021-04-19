@@ -1,3 +1,6 @@
+# Usage:
+# python3 reporter.py
+
 import os
 
 flags = ['1', 'X', 'T']
