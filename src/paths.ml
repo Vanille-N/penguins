@@ -346,10 +346,8 @@ module Make (M:S) = struct
                     |> List.iter (fun p -> s := HSet.add !s p);
                     !s
                 ) in
-                HSet.iter ice (fun p ->
-                    if not HSet.(member useful_set p) then
-                        ice_trim := HSet.remove !ice_trim p
-                );
+                let useless_set = HSet.(setminus ice useful_set) in
+                ice_trim := HSet.(setminus !ice_trim useless_set);
             );
             if not !Cfg.quiet then show_path (translator ice_full !ice_trim) Format.std_formatter [];
         );
