@@ -7,25 +7,27 @@ module type FIN = sig
 end
 
 module type SET = sig
-  type t
-  type elt
+    type t
+    type elt
 
-  val cardinal : t -> int
-  val empty : t
-  val init : (elt -> bool) -> t
+    val cardinal : t -> int
+    val empty : t
+    val init : (elt -> bool) -> t
 
-  val add : t -> elt -> t
-  val remove : t -> elt -> t
-  val member : t -> elt -> bool
-  val subset : t -> t -> bool
+    val add : t -> elt -> t
+    val remove : t -> elt -> t
+    val member : t -> elt -> bool
 
-  val iter : t -> (elt -> unit) -> unit
-  val setminus : t -> t -> t
-  val union : t -> t -> t
-  val intersect : t -> t -> t
-  val compare : t -> t -> int
+    val iter : t -> (elt -> unit) -> unit
+    val collect : t -> elt list 
 
-  val transitive_closure : elt -> (elt -> elt list) -> t
+    val setminus : t -> t -> t
+    val union : t -> t -> t
+    val intersect : t -> t -> t
+    val subset : t -> t -> bool
+    val compare : t -> t -> int
+
+    val transitive_closure : elt -> (elt -> elt list) -> t
 end
 
 module Make (F : FIN) : SET with type elt = F.t = struct
