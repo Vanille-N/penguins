@@ -19,7 +19,9 @@ def sample_file_opt(file, optflags):
         arg_opt = "-o{}".format(optflags)
         _ = sp.check_output(["./pingouin", "-dQ", arg_opt, file], timeout=35)
         after = t.time()
-        return after - before
+        result = after - before
+        print("\x1b[1A{}".format(result))
+        return result
     except:
         return 35
 

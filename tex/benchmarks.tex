@@ -1,10 +1,25 @@
 \section{Benchmarks}
 
+\subsection{Methodology}
+
+Each problem is timed with all combinations of optimization flags.\\
+Timeout is set to 30 seconds, any execution error or timeout results in an
+\(\infty\) for this combination.\\
+
+Average is calculated on 5, 20 or 50 runs depending on execution time, ensuring
+that the displayed average has sufficient precision.\\
+
+To avoid interference, all benchmarks are run consecutively on an otherwise
+inactive computer.\\
+
+
+\subsection{Results}
+
 \begin{center}\label{bench-results}
 \input{bench-results}
 \end{center}
 
-The first takeaway is that none of the optimizations are useless :
+The main takeaway is that none of the optimizations are useless :
 \ttt{1} yields a small but noticeable improvement in performance on
 \ttt{flake5h}, \ttt{scale4}, \ttt{scale5}, \ttt{large1}, \ttt{large2}, \ttt{trefoil};
 \ttt{X} is useful in the same way for \ttt{scale2}, \ttt{scale3}, \ttt{flake4hv}.\\
