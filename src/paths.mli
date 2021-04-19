@@ -35,7 +35,9 @@ module Make (M : S) : sig
 
         It makes no assumption as to whether or not [elt] belongs
         to [set] before being removed, but it does assume that
-        [add set elt] is connected. *)
+        [add set elt] is connected.
+
+        @deprecated You might as well check directly the length of [accessible] *)
     val disconnected : HSet.t -> HSet.elt -> bool
 
     (** Recalculate the list of connected components

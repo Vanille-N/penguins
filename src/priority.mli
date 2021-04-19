@@ -38,14 +38,20 @@ module Make (M:ORDERED) : sig
     val value : 'a node -> 'a
 
     (** Remove an element from the queue before
-        its scheduled priority *)
+        its scheduled priority
+
+        @deprecated Bad performance *)
     val remove : 'a queue -> 'a node -> unit
 
-    (** Search presence of a node in the queue *)
+    (** Search presence of a node in the queue
+
+        @deprecated Bad performance *)
     val member : 'a queue -> 'a node -> bool
 
     (** Increase the priority of a node, insert it into
-        the queue if it does not already exist *)
+        the queue if it does not already exist
+
+        @deprecated Bad performance *)
     val decrease_key : 'a queue -> 'a node -> M.t -> unit
 
 end
