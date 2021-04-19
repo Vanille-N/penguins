@@ -20,6 +20,7 @@ module type SET = sig
 
     val iter : t -> (elt -> unit) -> unit
     val collect : t -> elt list 
+    val of_list : elt list -> t
 
     val setminus : t -> t -> t
     val union : t -> t -> t
@@ -151,6 +152,12 @@ module Make (F : FIN) : SET with type elt = F.t = struct
                 else rest acc
             )
         in aux [] (F.max / 64, F.max mod 64)
+
+    let of_list lst =
+        let set = clone empty in
+        lst
+        |> List.iter (fun e -> add_bit_mut set (accessor (F.to_int e)));
+        set
 
     (* faster than loop because bypasses [to_int] and [of_int] conversions
      * also avoid copies *)

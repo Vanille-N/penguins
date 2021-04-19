@@ -201,12 +201,7 @@ module Make (M:S) = struct
     let maxpath start =
         let ice_full = accessible HSet.(init (fun (i,j) -> M.grid.(i).(j))) start in
         let nb = HSet.cardinal ice_full in
-        let positions = (
-            (* build a list of all positions that are in the set *)
-            let positions = ref [] in
-            HSet.iter ice_full (fun p -> positions := p :: !positions);
-            !positions
-        ) in
+        let positions = HSet.collect ice_full in
         let board_splits = if !Cfg.trim then (
             positions
             |> List.map (fun p ->
@@ -340,12 +335,7 @@ module Make (M:S) = struct
                 bestpath best HSet.(intersect ice !ice_trim) p all_moves;
                 Hashtbl.add precalculated (p,HSet.remove ice p) best;
                 let useful_pos = Hex.path_of_moves p (List.rev best.path) in
-                let useful_set = (
-                    let s = ref HSet.empty in
-                    useful_pos
-                    |> List.iter (fun p -> s := HSet.add !s p);
-                    !s
-                ) in
+                let useful_set = HSet.of_list useful_pos in
                 let useless_set = HSet.(setminus ice useful_set) in
                 ice_trim := HSet.(setminus !ice_trim useless_set);
             );

@@ -150,6 +150,9 @@ let main () = CSet.(
             List.init 26 (fun i -> char_of_int (i + int_of_char 'A'))
             @ List.init 26 (fun i -> char_of_int (i + int_of_char 'a'))
         ));
+    );
+    test "of list" (fun () ->
+        assert (of_list ['a';'b';'c';'A';'B';'C';'.'] = init (function 'a'|'b'|'c'|'A'|'B'|'C'|'.' -> true | _ -> false))
     )
 )
 
